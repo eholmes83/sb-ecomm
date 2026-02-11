@@ -7,10 +7,12 @@ A full-stack e-commerce application built with Spring Boot, designed to provide 
 - [Overview](#overview)
 - [Technology Stack](#technology-stack)
 - [Prerequisites](#prerequisites)
-- [Getting Started](#getting-started)
+- [Architecture Overview](#-architecture-overview)
 - [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
 - [Building the Application](#building-the-application)
 - [Running the Application](#running-the-application)
+- [API Endpoints](#-api-endpoints)
 - [Development](#development)
 - [Contributing](#contributing)
 - [License](#license)
@@ -25,7 +27,14 @@ This is a **living document** that evolves as I progress through a comprehensive
 
 ### 🔄 Recent Changes
 
-**Latest Updates (February 2026):**
+**Latest Updates (February 11, 2026):**
+- ✨ **Adopted Vertical Slice Architecture** for the entire project
+  - Features are now organized as self-contained slices rather than horizontal layers
+  - Each feature (Category, Product, Order, etc.) will contain all its layers: controller, service, model, DTO, repository, validator, mapper, exception, and config
+  - This architecture promotes feature isolation, improved scalability, and easier maintenance
+  - See [Architecture Overview](#-architecture-overview) section below for detailed information
+
+**Previous Updates (February 2026):**
 - Restructured package hierarchy from `com.echapps.sbecomm` to `com.echapps.ecom.project`
 - Implemented **Category Management** module with full REST API
   - Created `Category` model class with ID and name properties
@@ -139,20 +148,57 @@ sb-ecomm/
 └── README.md                                                        # This file
 ```
 
-### Package Organization
+### 🏛️ Architecture Overview
 
-The application follows a layered architecture pattern:
+The application follows a **Vertical Slice Architecture** pattern, organizing code by feature/domain boundaries rather than technical layers. Each feature slice contains all layers needed to implement that feature independently.
+
+> **Note**: The project has been refactored from a traditional horizontal layered architecture to vertical slice architecture to better support scalability, maintainability, and team collaboration. As new features are added, they will follow the same vertical slice pattern established in the Category feature slice.
+
+#### Package Organization - Vertical Slice Structure
 
 ```
 com.echapps.ecom.project/
-├── controller/      # REST controllers and web endpoints
-├── service/         # Business logic layer (interfaces and implementations)
-├── model/           # Domain entities and DTOs
-├── repository/      # Data access layer (planned)
-├── config/          # Configuration classes (planned)
-├── exception/       # Custom exceptions and error handling (planned)
-└── util/            # Utility classes and helpers (planned)
+├── features/
+│   ├── category/                 # Category Management Feature Slice
+│   │   ├── controller/           # REST endpoints (HTTP layer)
+│   │   │   └── CategoryController.java
+│   │   ├── service/              # Business logic layer
+│   │   │   ├── CategoryService.java
+│   │   │   └── CategoryServiceImpl.java
+│   │   ├── model/                # Domain entities
+│   │   │   └── Category.java
+│   │   ├── dto/                  # Data transfer objects (planned)
+│   │   │   ├── CategoryResponse.java
+│   │   │   └── CreateCategoryRequest.java
+│   │   ├── repository/           # Data access layer (planned)
+│   │   │   └── CategoryRepository.java
+│   │   ├── exception/            # Feature-specific exceptions (planned)
+│   │   │   └── CategoryNotFoundException.java
+│   │   ├── validator/            # Input validation (planned)
+│   │   │   └── CategoryValidator.java
+│   │   ├── mapper/               # DTO/Entity mappers (planned)
+│   │   │   └── CategoryMapper.java
+│   │   └── config/               # Feature configuration (planned)
+│   │       └── CategoryConfiguration.java
+│   ├── product/                  # Product Management Feature Slice (future)
+│   ├── order/                    # Order Management Feature Slice (future)
+│   └── user/                     # User Management Feature Slice (future)
+└── shared/
+    ├── exception/                # Global exception handling
+    ├── config/                   # Application-wide configuration
+    ├── util/                     # Cross-cutting utilities
+    └── constants/                # Global constants
 ```
+
+#### Benefits of Vertical Slice Architecture
+
+✅ **Feature Isolation** - Each feature is self-contained and independently deployable  
+✅ **Reduced Coupling** - Features don't depend on shared horizontal layers  
+✅ **Scalability** - Easy to add new features without modifying existing code  
+✅ **Testability** - Each slice can be tested in isolation  
+✅ **Maintainability** - All code for a feature is in one location  
+✅ **Team Collaboration** - Teams can work on different features in parallel  
+✅ **Domain-Driven Design** - Naturally aligns with business domains
 
 ## 🔨 Building the Application
 
