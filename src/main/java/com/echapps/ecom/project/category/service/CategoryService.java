@@ -1,6 +1,6 @@
-package com.echapps.ecom.project.service;
+package com.echapps.ecom.project.category.service;
 
-import com.echapps.ecom.project.model.Category;
+import com.echapps.ecom.project.category.model.Category;
 
 import java.util.List;
 

@@ -1,7 +1,7 @@
-package com.echapps.ecom.project.controller;
+package com.echapps.ecom.project.category.controller;
 
-import com.echapps.ecom.project.model.Category;
-import com.echapps.ecom.project.service.CategoryService;
+import com.echapps.ecom.project.category.model.Category;
+import com.echapps.ecom.project.category.service.CategoryService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

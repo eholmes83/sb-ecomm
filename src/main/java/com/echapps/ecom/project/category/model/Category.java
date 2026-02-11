@@ -1,4 +1,4 @@
-package com.echapps.ecom.project.model;
+package com.echapps.ecom.project.category.model;
 
 public class Category {
     private Long categoryId;
