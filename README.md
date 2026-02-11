@@ -23,8 +23,23 @@ A full-stack e-commerce application built with Spring Boot, designed to provide 
 
 This is a **living document** that evolves as I progress through a comprehensive Udemy course on AWS and full-stack development. I'm working through this course to expand my skillset, maintain my technical skills, and continue learning while actively seeking new opportunities after a recent layoff. This project will grow and improve as new features and concepts from the course are implemented.
 
-### Key Features (In Development)
+### 🔄 Recent Changes
 
+**Latest Updates (February 2026):**
+- Restructured package hierarchy from `com.echapps.sbecomm` to `com.echapps.ecom.project`
+- Implemented **Category Management** module with full REST API
+  - Created `Category` model class with ID and name properties
+  - Developed `CategoryController` with REST endpoints for CRUD operations
+  - Built `CategoryService` interface and `CategoryServiceImpl` implementation
+  - API endpoints: GET, POST, and DELETE for categories
+  - Implemented role-based access control (public and admin endpoints)
+
+### Key Features
+
+**✅ Implemented:**
+- 🏷️ **Category Management** - Full CRUD operations for product categories with REST API endpoints
+
+**🚧 In Development:**
 - 🛍️ Product catalog management
 - 🛒 Shopping cart functionality
 - 👤 User authentication and authorization
@@ -97,37 +112,46 @@ sb-ecomm/
 │   │   ├── java/
 │   │   │   └── com/
 │   │   │       └── echapps/
-│   │   │           └── sbecomm/
-│   │   │               └── SbEcommApplication.java    # Main application entry point
+│   │   │           └── ecom/
+│   │   │               └── project/
+│   │   │                   ├── SbEcommApplication.java              # Main application entry point
+│   │   │                   ├── controller/
+│   │   │                   │   └── CategoryController.java          # REST endpoints for categories
+│   │   │                   ├── model/
+│   │   │                   │   └── Category.java                    # Category entity
+│   │   │                   └── service/
+│   │   │                       ├── CategoryService.java             # Service interface
+│   │   │                       └── CategoryServiceImpl.java          # Service implementation
 │   │   └── resources/
-│   │       ├── application.properties                  # Application configuration
-│   │       ├── static/                                 # Static resources (CSS, JS, images)
-│   │       └── templates/                              # Server-side templates (Thymeleaf, etc.)
+│   │       ├── application.properties                               # Application configuration
+│   │       ├── static/                                              # Static resources (CSS, JS, images)
+│   │       └── templates/                                           # Server-side templates (Thymeleaf, etc.)
 │   └── test/
 │       └── java/
 │           └── com/
 │               └── echapps/
-│                   └── sbecomm/
-│                       └── SbEcommApplicationTests.java # Test cases
-├── pom.xml                                             # Maven configuration
-├── mvnw                                                # Maven Wrapper (Unix)
-├── mvnw.cmd                                            # Maven Wrapper (Windows)
-└── README.md                                           # This file
+│                   └── ecom/
+│                       └── project/
+│                           └── SbEcommApplicationTests.java          # Test cases
+├── pom.xml                                                          # Maven configuration
+├── mvnw                                                             # Maven Wrapper (Unix)
+├── mvnw.cmd                                                         # Maven Wrapper (Windows)
+└── README.md                                                        # This file
 ```
 
 ### Package Organization
 
-The application follows a standard Spring Boot project structure with the following recommended package organization:
+The application follows a layered architecture pattern:
 
 ```
-com.echapps.sbecomm/
+com.echapps.ecom.project/
 ├── controller/      # REST controllers and web endpoints
-├── service/         # Business logic layer
-├── repository/      # Data access layer
+├── service/         # Business logic layer (interfaces and implementations)
 ├── model/           # Domain entities and DTOs
-├── config/          # Configuration classes
-├── exception/       # Custom exceptions and error handling
-└── util/            # Utility classes and helpers
+├── repository/      # Data access layer (planned)
+├── config/          # Configuration classes (planned)
+├── exception/       # Custom exceptions and error handling (planned)
+└── util/            # Utility classes and helpers (planned)
 ```
 
 ## 🔨 Building the Application
@@ -180,6 +204,49 @@ Run the `SbEcommApplication.java` class directly from your IDE.
 Once started, the application will be available at:
 - **Base URL**: `http://localhost:8080`
 - **Health Check**: `http://localhost:8080/actuator/health` (if actuator is added)
+
+## 📡 API Endpoints
+
+### Category Management
+
+**Get All Categories**
+```
+GET /api/v1/public/categories
+```
+Returns a list of all product categories.
+
+**Create Category**
+```
+POST /api/v1/public/categories
+Content-Type: application/json
+
+{
+  "categoryId": 1,
+  "categoryName": "Electronics"
+}
+```
+Creates a new product category.
+
+**Delete Category**
+```
+DELETE /api/v1/admin/categories/{id}
+```
+Deletes a category by ID. Requires admin privileges.
+
+### Example Usage with cURL
+
+```bash
+# Get all categories
+curl http://localhost:8080/api/v1/public/categories
+
+# Create a category
+curl -X POST http://localhost:8080/api/v1/public/categories \
+  -H "Content-Type: application/json" \
+  -d '{"categoryId": 1, "categoryName": "Electronics"}'
+
+# Delete a category
+curl -X DELETE http://localhost:8080/api/v1/admin/categories/1
+```
 
 ## 💻 Development
 
