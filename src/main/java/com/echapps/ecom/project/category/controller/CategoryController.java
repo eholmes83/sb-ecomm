@@ -2,7 +2,10 @@ package com.echapps.ecom.project.category.controller;
 
 import com.echapps.ecom.project.category.model.Category;
 import com.echapps.ecom.project.category.service.CategoryService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -10,26 +13,31 @@ import java.util.List;
 @RequestMapping("/api/v1")
 public class CategoryController {
 
-    private CategoryService categoryService;
+    private final CategoryService categoryService;
 
     public CategoryController(CategoryService categoryService) {
         this.categoryService = categoryService;
     }
 
     @GetMapping("/public/categories")
-    public List<Category> getAllCategories() {
-        return categoryService.getAllCategories();
+    public ResponseEntity<List<Category>> getAllCategories() {
+        List<Category> categories = categoryService.getAllCategories();
+        return new ResponseEntity<>(categories, HttpStatus.OK);
     }
 
     @PostMapping("/public/categories")
-    public String createCategory(@RequestBody Category category) {
+    public ResponseEntity<String> createCategory(@RequestBody Category category) {
         categoryService.createCategory(category);
-        return "Category created successfully";
+        return new ResponseEntity<>("Category created successfully", HttpStatus.CREATED);
     }
 
     @DeleteMapping("/admin/categories/{id}")
-    public String deleteCategory(@PathVariable Long id) {
-        return categoryService.deleteCategory(id);
+    public ResponseEntity<String> deleteCategory(@PathVariable Long id) {
+        try {
+             String status = categoryService.deleteCategory(id);
+             return ResponseEntity.ok(status);
+        } catch (ResponseStatusException e) {
+            return new ResponseEntity<>(e.getReason(), e.getStatusCode());
+        }
     }
-
 }
