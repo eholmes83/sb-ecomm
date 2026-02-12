@@ -27,7 +27,17 @@ This is a **living document** that evolves as I progress through a comprehensive
 
 ### 🔄 Recent Changes
 
-**Latest Updates (February 11, 2026):**
+**Latest Updates (February 11, 2026 - Evening):**
+- 🔧 **Enhanced Category Management with Full CRUD**
+  - Added **PUT endpoint** (`/api/v1/public/categories/{categoryId}`) for updating categories
+  - Implemented **ResponseEntity** for proper HTTP status code handling (200 OK, 201 CREATED, 404 NOT FOUND)
+  - Enhanced error handling with **ResponseStatusException** for not found scenarios
+  - Built **in-memory storage** using ArrayList with auto-incrementing ID generation
+  - Changed controller method return types from String to ResponseEntity for better REST practices
+  - Service layer now includes full exception handling and validation logic
+  - All 4 CRUD operations now fully functional: CREATE, READ, UPDATE, DELETE
+
+**Earlier Today (February 11, 2026 - Morning):**
 - ✨ **Adopted Vertical Slice Architecture** for the entire project
   - Features are now organized as self-contained slices rather than horizontal layers
   - Each feature (Category, Product, Order, etc.) will contain all its layers: controller, service, model, DTO, repository, validator, mapper, exception, and config
@@ -46,7 +56,14 @@ This is a **living document** that evolves as I progress through a comprehensive
 ### Key Features
 
 **✅ Implemented:**
-- 🏷️ **Category Management** - Full CRUD operations for product categories with REST API endpoints
+- 🏷️ **Category Management** - Complete CRUD operations with REST API endpoints
+  - ✅ CREATE - Add new categories with auto-generated IDs
+  - ✅ READ - Retrieve all categories or specific categories
+  - ✅ UPDATE - Modify existing category information
+  - ✅ DELETE - Remove categories with proper error handling
+  - ✅ In-memory storage with ArrayList
+  - ✅ HTTP status code management (200, 201, 404)
+  - ✅ Exception handling with meaningful error messages
 
 **🚧 In Development:**
 - 🛍️ Product catalog management
@@ -158,37 +175,42 @@ The application follows a **Vertical Slice Architecture** pattern, organizing co
 
 ```
 com.echapps.ecom.project/
-├── features/
-│   ├── category/                 # Category Management Feature Slice
-│   │   ├── controller/           # REST endpoints (HTTP layer)
-│   │   │   └── CategoryController.java
-│   │   ├── service/              # Business logic layer
-│   │   │   ├── CategoryService.java
-│   │   │   └── CategoryServiceImpl.java
-│   │   ├── model/                # Domain entities
-│   │   │   └── Category.java
-│   │   ├── dto/                  # Data transfer objects (planned)
-│   │   │   ├── CategoryResponse.java
-│   │   │   └── CreateCategoryRequest.java
-│   │   ├── repository/           # Data access layer (planned)
-│   │   │   └── CategoryRepository.java
-│   │   ├── exception/            # Feature-specific exceptions (planned)
-│   │   │   └── CategoryNotFoundException.java
-│   │   ├── validator/            # Input validation (planned)
-│   │   │   └── CategoryValidator.java
-│   │   ├── mapper/               # DTO/Entity mappers (planned)
-│   │   │   └── CategoryMapper.java
-│   │   └── config/               # Feature configuration (planned)
-│   │       └── CategoryConfiguration.java
-│   ├── product/                  # Product Management Feature Slice (future)
-│   ├── order/                    # Order Management Feature Slice (future)
-│   └── user/                     # User Management Feature Slice (future)
-└── shared/
-    ├── exception/                # Global exception handling
-    ├── config/                   # Application-wide configuration
-    ├── util/                     # Cross-cutting utilities
-    └── constants/                # Global constants
+├── category/                     # Category Management Feature Slice
+│   ├── controller/               # ✅ REST endpoints (HTTP layer)
+│   │   └── CategoryController.java
+│   ├── service/                  # ✅ Business logic layer
+│   │   ├── CategoryService.java
+│   │   └── CategoryServiceImpl.java (in-memory ArrayList storage)
+│   ├── model/                    # ✅ Domain entities
+│   │   └── Category.java
+│   ├── dto/                      # 🚧 Data transfer objects (planned)
+│   │   ├── CategoryResponse.java
+│   │   └── CreateCategoryRequest.java
+│   ├── repository/               # 🚧 Data access layer (planned - JPA/Database)
+│   │   └── CategoryRepository.java
+│   ├── exception/                # 🚧 Feature-specific exceptions (planned)
+│   │   └── CategoryNotFoundException.java
+│   ├── validator/                # 🚧 Input validation (planned)
+│   │   └── CategoryValidator.java
+│   ├── mapper/                   # 🚧 DTO/Entity mappers (planned)
+│   │   └── CategoryMapper.java
+│   └── config/                   # 🚧 Feature configuration (planned)
+│       └── CategoryConfiguration.java
+├── product/                      # Product Management Feature Slice (future)
+├── order/                        # Order Management Feature Slice (future)
+└── user/                         # User Management Feature Slice (future)
+
+shared/                           # Shared/Cross-cutting concerns (planned)
+├── exception/                    # Global exception handling
+├── config/                       # Application-wide configuration
+├── util/                         # Cross-cutting utilities
+└── constants/                    # Global constants
 ```
+
+> **Current Implementation Status:**  
+> ✅ = Implemented | 🚧 = Planned/In Development  
+> 
+> The Category slice currently uses **in-memory ArrayList storage** with auto-incrementing IDs. Future iterations will add JPA/database persistence, DTOs for better API contracts, custom exceptions, validators, and mappers to complete the vertical slice architecture.
 
 #### Benefits of Vertical Slice Architecture
 
@@ -261,23 +283,72 @@ GET /api/v1/public/categories
 ```
 Returns a list of all product categories.
 
+**Response:** `200 OK`
+```json
+[
+  {
+    "categoryId": 1,
+    "categoryName": "Electronics"
+  },
+  {
+    "categoryId": 2,
+    "categoryName": "Clothing"
+  }
+]
+```
+
 **Create Category**
 ```
 POST /api/v1/public/categories
 Content-Type: application/json
 
 {
-  "categoryId": 1,
   "categoryName": "Electronics"
 }
 ```
-Creates a new product category.
+Creates a new product category. Category ID is auto-generated.
+
+**Response:** `201 CREATED`
+```
+Category created successfully
+```
+
+**Update Category**
+```
+PUT /api/v1/public/categories/{categoryId}
+Content-Type: application/json
+
+{
+  "categoryName": "Updated Electronics"
+}
+```
+Updates an existing category by ID.
+
+**Response:** `200 OK`
+```
+Category with id: 1 updated successfully
+```
+
+**Response (Not Found):** `404 NOT FOUND`
+```
+Category not found
+```
 
 **Delete Category**
 ```
 DELETE /api/v1/admin/categories/{id}
 ```
 Deletes a category by ID. Requires admin privileges.
+
+**Response:** `200 OK`
+```
+Category with id 1 deleted successfully
+```
+
+**Response (Not Found):** `404 NOT FOUND`
+```
+Category not found
+```
 
 ### Example Usage with cURL
 
@@ -288,7 +359,12 @@ curl http://localhost:8080/api/v1/public/categories
 # Create a category
 curl -X POST http://localhost:8080/api/v1/public/categories \
   -H "Content-Type: application/json" \
-  -d '{"categoryId": 1, "categoryName": "Electronics"}'
+  -d '{"categoryName": "Electronics"}'
+
+# Update a category
+curl -X PUT http://localhost:8080/api/v1/public/categories/1 \
+  -H "Content-Type: application/json" \
+  -d '{"categoryName": "Updated Electronics"}'
 
 # Delete a category
 curl -X DELETE http://localhost:8080/api/v1/admin/categories/1
