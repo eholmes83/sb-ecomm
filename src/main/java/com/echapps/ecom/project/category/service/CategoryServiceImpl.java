@@ -1,53 +1,46 @@
 package com.echapps.ecom.project.category.service;
 
 import com.echapps.ecom.project.category.model.Category;
+import com.echapps.ecom.project.category.repository.CategoryRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class CategoryServiceImpl implements CategoryService {
-    private List<Category> categories = new ArrayList<>();
-    private Long nextId = 1L;
+    private final CategoryRepository categoryRepository;
+
+    public CategoryServiceImpl(CategoryRepository categoryRepository) {
+        this.categoryRepository = categoryRepository;
+    }
 
     @Override
     public List<Category> getAllCategories() {
-        return categories;
+        return categoryRepository.findAll();
     }
 
     @Override
     public void createCategory(Category category) {
-        category.setCategoryId(nextId++);
-        categories.add(category);
+        categoryRepository.save(category);
     }
 
     @Override
-    public String deleteCategory(Long id) {
-        Category category = categories.stream()
-                .filter(c -> c.getCategoryId().equals(id))
-                .findFirst()
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
-        categories.remove(category);
-        return "Category with id " + id + " deleted successfully";
+    public void deleteCategory(Long id) {
+       Category category = categoryRepository.findById(id)
+               .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
+
+       categoryRepository.delete(category);
     }
 
     @Override
     public Category updateCategory(Category category, Long categoryId) {
-        Optional<Category> updatedCategory = categories.stream()
-                .filter(c -> c.getCategoryId().equals(categoryId))
-                .findFirst();
+        Category updatedCategory = categoryRepository.findById(categoryId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
 
-        if (updatedCategory.isPresent()) {
-            Category existingCategory = updatedCategory.get();
-            existingCategory.setCategoryName(category.getCategoryName());
-            return existingCategory;
-        } else {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found");
-        }
+        updatedCategory.setCategoryName(category.getCategoryName());
+        return categoryRepository.save(updatedCategory);
     }
 
 }
