@@ -27,7 +27,23 @@ This is a **living document** that evolves as I progress through a comprehensive
 
 ### 🔄 Recent Changes
 
-**Latest Updates (February 11, 2026 - Evening):**
+**Latest Updates (February 12, 2026):**
+- 🗄️ **Database Integration & JPA Implementation** 
+  - Added **CategoryRepository** interface extending `JpaRepository<Category, Long>` for database operations
+  - Converted **Category model** to JPA Entity with proper annotations:
+    - `@Entity(name = "categories")` - Maps class to database table
+    - `@Id` and `@GeneratedValue(strategy = GenerationType.IDENTITY)` - Auto-incrementing primary key
+  - Refactored **CategoryServiceImpl** to use repository instead of in-memory ArrayList
+  - All CRUD operations now use JPA for database persistence
+  - Added **H2 Database** as in-memory database for testing/development
+  - Added **Spring Data JPA** dependency for ORM support
+  - Configured **application.properties** with H2 connection and JPA settings:
+    - H2 console enabled for database inspection (`http://localhost:8080/h2-console`)
+    - SQL logging enabled for debugging
+  - Maintained all existing REST endpoints - no API changes, internal implementation refactored
+  - Service layer maintains exception handling with `ResponseStatusException` for 404 scenarios
+
+**Previous Updates (February 11, 2026 - Evening):**
 - 🔧 **Enhanced Category Management with Full CRUD**
   - Added **PUT endpoint** (`/api/v1/public/categories/{categoryId}`) for updating categories
   - Implemented **ResponseEntity** for proper HTTP status code handling (200 OK, 201 CREATED, 404 NOT FOUND)
@@ -56,14 +72,15 @@ This is a **living document** that evolves as I progress through a comprehensive
 ### Key Features
 
 **✅ Implemented:**
-- 🏷️ **Category Management** - Complete CRUD operations with REST API endpoints
-  - ✅ CREATE - Add new categories with auto-generated IDs
+- 🏷️ **Category Management** - Complete CRUD operations with database persistence
+  - ✅ CREATE - Add new categories (auto-generated IDs via database)
   - ✅ READ - Retrieve all categories or specific categories
   - ✅ UPDATE - Modify existing category information
   - ✅ DELETE - Remove categories with proper error handling
-  - ✅ In-memory storage with ArrayList
+  - ✅ **Database Persistence** - H2 in-memory database with JPA/Hibernate ORM
   - ✅ HTTP status code management (200, 201, 404)
   - ✅ Exception handling with meaningful error messages
+  - ✅ REST API endpoints with proper response entities
 
 **🚧 In Development:**
 - 🛍️ Product catalog management
@@ -80,11 +97,16 @@ This is a **living document** that evolves as I progress through a comprehensive
 - **Spring Boot**: 4.0.2
 - **Build Tool**: Maven
 - **Framework**: Spring MVC
+- **ORM**: Spring Data JPA / Hibernate
+- **Database**: H2 (In-Memory for Development)
 - **Development Tools**: Spring Boot DevTools (Hot Reload)
 
 ### Key Dependencies
 
 - `spring-boot-starter-webmvc` - Web MVC framework for building RESTful APIs
+- `spring-boot-starter-data-jpa` - Spring Data JPA for database persistence
+- `h2` - In-memory relational database for development/testing
+- `spring-boot-h2console` - H2 database browser console
 - `spring-boot-devtools` - Development tools for automatic restart and live reload
 - `spring-boot-starter-webmvc-test` - Testing support for Spring MVC applications
 
@@ -180,14 +202,14 @@ com.echapps.ecom.project/
 │   │   └── CategoryController.java
 │   ├── service/                  # ✅ Business logic layer
 │   │   ├── CategoryService.java
-│   │   └── CategoryServiceImpl.java (in-memory ArrayList storage)
-│   ├── model/                    # ✅ Domain entities
+│   │   └── CategoryServiceImpl.java (uses JPA repository)
+│   ├── repository/               # ✅ Data access layer (JPA/Database)
+│   │   └── CategoryRepository.java (extends JpaRepository)
+│   ├── model/                    # ✅ Domain entities (JPA Entity with annotations)
 │   │   └── Category.java
 │   ├── dto/                      # 🚧 Data transfer objects (planned)
 │   │   ├── CategoryResponse.java
 │   │   └── CreateCategoryRequest.java
-│   ├── repository/               # 🚧 Data access layer (planned - JPA/Database)
-│   │   └── CategoryRepository.java
 │   ├── exception/                # 🚧 Feature-specific exceptions (planned)
 │   │   └── CategoryNotFoundException.java
 │   ├── validator/                # 🚧 Input validation (planned)
@@ -210,7 +232,7 @@ shared/                           # Shared/Cross-cutting concerns (planned)
 > **Current Implementation Status:**  
 > ✅ = Implemented | 🚧 = Planned/In Development  
 > 
-> The Category slice currently uses **in-memory ArrayList storage** with auto-incrementing IDs. Future iterations will add JPA/database persistence, DTOs for better API contracts, custom exceptions, validators, and mappers to complete the vertical slice architecture.
+> The Category slice now has **full database persistence** using Spring Data JPA and H2 in-memory database. The repository layer is fully implemented and the service layer uses JPA for all data operations. Future iterations will add DTOs for better API contracts, custom exceptions, validators, and mappers to complete the vertical slice architecture.
 
 #### Benefits of Vertical Slice Architecture
 
@@ -387,19 +409,45 @@ Edit `src/main/resources/application.properties` to configure:
 - Logging levels
 - Custom application properties
 
-Example configurations:
+**Current Database Configuration:**
+
+```properties
+# Application name
+spring.application.name=sb-ecomm
+
+# H2 Database Configuration
+spring.h2.console.enabled=true
+spring.datasource.url=jdbc:h2:mem:testdb
+
+# JPA/Hibernate Configuration
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+# Uncomment to auto-update schema: spring.jpa.hibernate.ddl-auto=update
+```
+
+### Database Access
+
+**H2 Database Console:**
+- **URL**: `http://localhost:8080/h2-console`
+- **JDBC URL**: `jdbc:h2:mem:testdb`
+- **Username**: `sa` (default)
+- **Password**: (leave empty)
+
+Use the H2 console to:
+- View database tables and data
+- Execute SQL queries
+- Inspect category data persisted in the database
+
+### Customizing Configuration
+
+You can modify other settings as needed:
 
 ```properties
 # Server Configuration
 server.port=8080
 
-# Database Configuration (example for future use)
-# spring.datasource.url=jdbc:mysql://localhost:3306/ecommerce
-# spring.datasource.username=root
-# spring.datasource.password=password
-
 # Logging
-logging.level.com.echapps.sbecomm=DEBUG
+logging.level.com.echapps.ecom.project=DEBUG
 ```
 
 ### Adding Dependencies
