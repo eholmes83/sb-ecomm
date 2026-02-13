@@ -13,6 +13,7 @@ A full-stack e-commerce application built with Spring Boot, designed to provide 
 - [Building the Application](#building-the-application)
 - [Running the Application](#running-the-application)
 - [API Endpoints](#-api-endpoints)
+- [Service Layer Architecture](#-service-layer-architecture)
 - [Development](#development)
 - [Contributing](#contributing)
 - [License](#license)
@@ -27,7 +28,17 @@ This is a **living document** that evolves as I progress through a comprehensive
 
 ### 🔄 Recent Changes
 
-**Latest Updates (February 12, 2026):**
+**Latest Updates (February 12, 2026 - Night):**
+- 🔄 **Service Layer Refactoring - Return Type Optimization**
+  - Refactored **CategoryService interface** methods to return `void` instead of return values
+  - Updated **CategoryServiceImpl** to throw exceptions instead of returning status messages
+  - Modified **CategoryController** to handle void returns and manage responses independently
+  - Cleaner separation of concerns: Service handles data operations, Controller handles HTTP responses
+  - Exception handling consolidated in `ResponseStatusException` for all error scenarios
+  - More RESTful design: Service layer focuses on business logic, not HTTP details
+  - Improved testability: Service tests don't need to assert on response messages
+
+**Earlier Today (February 12, 2026):**
 - 🗄️ **Database Integration & JPA Implementation** 
   - Added **CategoryRepository** interface extending `JpaRepository<Category, Long>` for database operations
   - Converted **Category model** to JPA Entity with proper annotations:
@@ -72,15 +83,18 @@ This is a **living document** that evolves as I progress through a comprehensive
 ### Key Features
 
 **✅ Implemented:**
-- 🏷️ **Category Management** - Complete CRUD operations with database persistence
+- 🏷️ **Category Management** - Complete CRUD operations with database persistence and clean architecture
   - ✅ CREATE - Add new categories (auto-generated IDs via database)
   - ✅ READ - Retrieve all categories or specific categories
   - ✅ UPDATE - Modify existing category information
   - ✅ DELETE - Remove categories with proper error handling
   - ✅ **Database Persistence** - H2 in-memory database with JPA/Hibernate ORM
+  - ✅ **Separation of Concerns** - Service layer focuses on business logic, Controller handles HTTP responses
+  - ✅ **Clean Service Methods** - Service methods return `void` and throw exceptions for errors
   - ✅ HTTP status code management (200, 201, 404)
   - ✅ Exception handling with meaningful error messages
   - ✅ REST API endpoints with proper response entities
+  - ✅ **RESTful Design** - Clean separation between data operations and HTTP protocol concerns
 
 **🚧 In Development:**
 - 🛍️ Product catalog management
@@ -391,6 +405,65 @@ curl -X PUT http://localhost:8080/api/v1/public/categories/1 \
 # Delete a category
 curl -X DELETE http://localhost:8080/api/v1/admin/categories/1
 ```
+
+## 🏗️ Service Layer Architecture
+
+### Design Philosophy: Separation of Concerns
+
+The Category service layer demonstrates clean architecture principles with clear separation between business logic and HTTP protocol concerns.
+
+**Service Layer Responsibilities (CategoryService):**
+- Pure business logic - no awareness of HTTP
+- Data persistence operations via JpaRepository
+- Exception throwing for error scenarios (not returning status strings)
+- Methods return `void` or domain objects
+- Single Responsibility: Focus on WHAT to do, not HOW to communicate
+
+**Controller Responsibilities (CategoryController):**
+- HTTP request/response handling
+- Converting exceptions to appropriate HTTP status codes
+- Managing ResponseEntity with status codes
+- Single Responsibility: Focus on HTTP protocol details
+
+### Method Signatures
+
+**Service Layer (Business Logic)**
+```java
+public interface CategoryService {
+    List<Category> getAllCategories();
+    void createCategory(Category category);
+    void deleteCategory(Long id);  // Throws ResponseStatusException if not found
+    void updateCategory(Category category, Long categoryId);  // Throws ResponseStatusException if not found
+}
+```
+
+**Controller Layer (HTTP Response Handling)**
+```java
+@PostMapping("/public/categories")
+public ResponseEntity<String> createCategory(@RequestBody Category category) {
+    categoryService.createCategory(category);
+    return new ResponseEntity<>("Category created successfully", HttpStatus.CREATED);
+}
+
+@DeleteMapping("/admin/categories/{id}")
+public ResponseEntity<String> deleteCategory(@PathVariable Long id) {
+    try {
+        categoryService.deleteCategory(id);
+        return new ResponseEntity<>("Category with id: " + id + " deleted successfully", HttpStatus.OK);
+    } catch (ResponseStatusException e) {
+        return new ResponseEntity<>(e.getReason(), e.getStatusCode());
+    }
+}
+```
+
+### Benefits of This Approach
+
+✅ **Testability** - Service can be tested without mocking HttpStatus or ResponseEntity  
+✅ **Reusability** - Service layer can be used by controllers, scheduled tasks, or other clients  
+✅ **Clarity** - Clear what layer does what: service = logic, controller = HTTP  
+✅ **Exception Handling** - Exceptions bubble up naturally, caught at appropriate level  
+✅ **Spring Integration** - `ResponseStatusException` is Spring's standard for HTTP errors  
+✅ **Clean Code** - Service methods don't return status messages, controller does
 
 ## 💻 Development
 
