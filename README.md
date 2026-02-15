@@ -14,6 +14,8 @@ A full-stack e-commerce application built with Spring Boot, designed to provide 
 - [Running the Application](#running-the-application)
 - [API Endpoints](#-api-endpoints)
 - [Service Layer Architecture](#-service-layer-architecture)
+- [Input Validation](#-input-validation)
+- [Lombok Integration](#-lombok-integration)
 - [Development](#development)
 - [Contributing](#contributing)
 - [License](#license)
@@ -28,7 +30,24 @@ This is a **living document** that evolves as I progress through a comprehensive
 
 ### 🔄 Recent Changes
 
-**Latest Updates (February 12, 2026 - Night):**
+**Latest Updates (February 15, 2026):**
+- ✅ **Input Validation Implementation**
+  - Added **Jakarta Bean Validation** to Category model with `@NotBlank` annotation
+  - Category name field now validates that input is not empty or whitespace
+  - Added **Spring Boot Starter Validation** dependency to pom.xml
+  - Controller uses `@Valid` annotation to trigger validation on incoming requests
+  - Validation errors automatically return 400 BAD REQUEST with error details
+  - Custom validation message: "Category name is required"
+  - Enhanced data integrity and API robustness through declarative validation
+
+- 🔧 **Lombok Integration**
+  - Added **Lombok** dependency (version 1.18.42) to reduce boilerplate code
+  - Category model now uses `@Data`, `@NoArgsConstructor`, and `@AllArgsConstructor` annotations
+  - Automatic generation of getters, setters, toString, equals, and hashCode methods
+  - Cleaner, more maintainable code with less manual method writing
+  - Improved developer productivity with compile-time code generation
+
+**Previous Updates (February 12, 2026 - Night):**
 - 🔄 **Service Layer Refactoring - Return Type Optimization**
   - Refactored **CategoryService interface** methods to return `void` instead of return values
   - Updated **CategoryServiceImpl** to throw exceptions instead of returning status messages
@@ -89,9 +108,11 @@ This is a **living document** that evolves as I progress through a comprehensive
   - ✅ UPDATE - Modify existing category information
   - ✅ DELETE - Remove categories with proper error handling
   - ✅ **Database Persistence** - H2 in-memory database with JPA/Hibernate ORM
+  - ✅ **Input Validation** - Jakarta Bean Validation with `@NotBlank` constraint on category name
+  - ✅ **Lombok Integration** - Reduced boilerplate with auto-generated getters, setters, and constructors
   - ✅ **Separation of Concerns** - Service layer focuses on business logic, Controller handles HTTP responses
   - ✅ **Clean Service Methods** - Service methods return `void` and throw exceptions for errors
-  - ✅ HTTP status code management (200, 201, 404)
+  - ✅ HTTP status code management (200, 201, 400, 404)
   - ✅ Exception handling with meaningful error messages
   - ✅ REST API endpoints with proper response entities
   - ✅ **RESTful Design** - Clean separation between data operations and HTTP protocol concerns
@@ -113,15 +134,20 @@ This is a **living document** that evolves as I progress through a comprehensive
 - **Framework**: Spring MVC
 - **ORM**: Spring Data JPA / Hibernate
 - **Database**: H2 (In-Memory for Development)
-- **Development Tools**: Spring Boot DevTools (Hot Reload)
+- **Validation**: Jakarta Bean Validation (Spring Boot Starter Validation)
+- **Development Tools**: 
+  - Spring Boot DevTools (Hot Reload)
+  - Lombok (Code Generation)
 
 ### Key Dependencies
 
 - `spring-boot-starter-webmvc` - Web MVC framework for building RESTful APIs
 - `spring-boot-starter-data-jpa` - Spring Data JPA for database persistence
+- `spring-boot-starter-validation` - Jakarta Bean Validation for input validation
 - `h2` - In-memory relational database for development/testing
 - `spring-boot-h2console` - H2 database browser console
 - `spring-boot-devtools` - Development tools for automatic restart and live reload
+- `lombok` (v1.18.42) - Annotation-based code generation (getters, setters, constructors, etc.)
 - `spring-boot-starter-webmvc-test` - Testing support for Spring MVC applications
 
 ## 📦 Prerequisites
@@ -213,20 +239,20 @@ The application follows a **Vertical Slice Architecture** pattern, organizing co
 com.echapps.ecom.project/
 ├── category/                     # Category Management Feature Slice
 │   ├── controller/               # ✅ REST endpoints (HTTP layer)
-│   │   └── CategoryController.java
+│   │   └── CategoryController.java (uses @Valid for validation)
 │   ├── service/                  # ✅ Business logic layer
 │   │   ├── CategoryService.java
 │   │   └── CategoryServiceImpl.java (uses JPA repository)
 │   ├── repository/               # ✅ Data access layer (JPA/Database)
 │   │   └── CategoryRepository.java (extends JpaRepository)
-│   ├── model/                    # ✅ Domain entities (JPA Entity with annotations)
-│   │   └── Category.java
+│   ├── model/                    # ✅ Domain entities (JPA Entity with validation)
+│   │   └── Category.java (uses Lombok & Jakarta Bean Validation)
 │   ├── dto/                      # 🚧 Data transfer objects (planned)
 │   │   ├── CategoryResponse.java
 │   │   └── CreateCategoryRequest.java
 │   ├── exception/                # 🚧 Feature-specific exceptions (planned)
 │   │   └── CategoryNotFoundException.java
-│   ├── validator/                # 🚧 Input validation (planned)
+│   ├── validator/                # 🚧 Custom validation logic (planned)
 │   │   └── CategoryValidator.java
 │   ├── mapper/                   # 🚧 DTO/Entity mappers (planned)
 │   │   └── CategoryMapper.java
@@ -246,7 +272,7 @@ shared/                           # Shared/Cross-cutting concerns (planned)
 > **Current Implementation Status:**  
 > ✅ = Implemented | 🚧 = Planned/In Development  
 > 
-> The Category slice now has **full database persistence** using Spring Data JPA and H2 in-memory database. The repository layer is fully implemented and the service layer uses JPA for all data operations. Future iterations will add DTOs for better API contracts, custom exceptions, validators, and mappers to complete the vertical slice architecture.
+> The Category slice now has **full database persistence** using Spring Data JPA and H2 in-memory database, **input validation** using Jakarta Bean Validation, and **Lombok** for cleaner code. The repository layer is fully implemented and the service layer uses JPA for all data operations. Future iterations will add DTOs for better API contracts, custom exceptions, custom validators, and mappers to complete the vertical slice architecture.
 
 #### Benefits of Vertical Slice Architecture
 
@@ -344,9 +370,24 @@ Content-Type: application/json
 ```
 Creates a new product category. Category ID is auto-generated.
 
+**Validation Rules:**
+- `categoryName` is required (cannot be blank, null, or whitespace only)
+- Validation is performed using Jakarta Bean Validation
+
 **Response:** `201 CREATED`
 ```
 Category created successfully
+```
+
+**Response (Validation Error):** `400 BAD REQUEST`
+```json
+{
+  "timestamp": "2026-02-15T16:30:00.000+00:00",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Category name is required",
+  "path": "/api/v1/public/categories"
+}
 ```
 
 **Update Category**
@@ -464,6 +505,157 @@ public ResponseEntity<String> deleteCategory(@PathVariable Long id) {
 ✅ **Exception Handling** - Exceptions bubble up naturally, caught at appropriate level  
 ✅ **Spring Integration** - `ResponseStatusException` is Spring's standard for HTTP errors  
 ✅ **Clean Code** - Service methods don't return status messages, controller does
+
+## 🛡️ Input Validation
+
+### Jakarta Bean Validation
+
+The application uses **Jakarta Bean Validation** (formerly JSR-303/JSR-380) for declarative input validation. This provides a standardized way to validate data before it reaches the business logic layer.
+
+### Category Model Validation
+
+The `Category` entity uses validation annotations to ensure data integrity:
+
+```java
+@Entity(name = "categories")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Category {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long categoryId;
+
+    @NotBlank(message = "Category name is required")
+    private String categoryName;
+}
+```
+
+**Validation Constraints:**
+- `@NotBlank` - Ensures the category name is not null, empty, or whitespace
+- Custom error message: "Category name is required"
+
+### Controller Validation Trigger
+
+The controller uses `@Valid` annotation to trigger validation on incoming requests:
+
+```java
+@PostMapping("/public/categories")
+public ResponseEntity<String> createCategory(@Valid @RequestBody Category category) {
+    categoryService.createCategory(category);
+    return new ResponseEntity<>("Category created successfully", HttpStatus.CREATED);
+}
+```
+
+When validation fails:
+- Spring automatically returns **400 BAD REQUEST**
+- Response includes validation error details
+- Request never reaches the service layer
+
+### Benefits of Bean Validation
+
+✅ **Declarative** - Validation rules defined directly on model fields  
+✅ **Reusable** - Same validation applies everywhere the entity is used  
+✅ **Standard** - Based on Jakarta EE specification  
+✅ **Automatic** - Spring Boot auto-configures validation support  
+✅ **Clean** - No manual validation code in controllers or services  
+✅ **Consistent** - Uniform error response format across the API
+
+## 🔧 Lombok Integration
+
+### Code Generation with Annotations
+
+The project uses **Lombok** to reduce boilerplate code through compile-time code generation. Lombok provides annotations that automatically generate commonly used methods.
+
+### Category Model with Lombok
+
+```java
+@Entity(name = "categories")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Category {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long categoryId;
+
+    @NotBlank(message = "Category name is required")
+    private String categoryName;
+}
+```
+
+**Lombok Annotations Used:**
+
+| Annotation | Generated Code |
+|------------|----------------|
+| `@Data` | Getters for all fields, setters for all non-final fields, `toString()`, `equals()`, `hashCode()` |
+| `@NoArgsConstructor` | Default constructor with no parameters |
+| `@AllArgsConstructor` | Constructor with parameters for all fields |
+
+### Before vs. After Lombok
+
+**Without Lombok (Manual):**
+```java
+public class Category {
+    private Long categoryId;
+    private String categoryName;
+    
+    // Default constructor
+    public Category() {}
+    
+    // All-args constructor
+    public Category(Long categoryId, String categoryName) {
+        this.categoryId = categoryId;
+        this.categoryName = categoryName;
+    }
+    
+    // Getters
+    public Long getCategoryId() { return categoryId; }
+    public String getCategoryName() { return categoryName; }
+    
+    // Setters
+    public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
+    public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
+    
+    // equals, hashCode, toString methods...
+    // (30+ more lines of boilerplate)
+}
+```
+
+**With Lombok (3 annotations):**
+```java
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Category {
+    private Long categoryId;
+    private String categoryName;
+}
+```
+
+### Benefits of Lombok
+
+✅ **Less Boilerplate** - Reduces code size by 70-80%  
+✅ **Maintainability** - Adding/removing fields doesn't require updating methods  
+✅ **Readability** - Focus on business logic, not getters/setters  
+✅ **Consistency** - Generated methods follow best practices  
+✅ **Productivity** - Faster development with less typing  
+✅ **IDE Support** - Works with IntelliJ IDEA, Eclipse, VS Code
+
+### IDE Setup for Lombok
+
+**IntelliJ IDEA:**
+1. Install Lombok plugin (usually pre-installed)
+2. Enable annotation processing: Settings → Build → Compiler → Annotation Processors → Enable
+3. IntelliJ will recognize generated methods for autocomplete
+
+**Eclipse:**
+1. Run `java -jar lombok.jar` to install Lombok into Eclipse
+2. Restart Eclipse
+
+**VS Code:**
+1. Install "Lombok Annotations Support" extension
+2. Configure Java language server to enable annotation processing
 
 ## 💻 Development
 
