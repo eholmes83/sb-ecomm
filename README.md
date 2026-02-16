@@ -30,7 +30,25 @@ This is a **living document** that evolves as I progress through a comprehensive
 
 ### 🔄 Recent Changes
 
-**Latest Updates (February 15, 2026):**
+**Latest Updates (February 16, 2026):**
+- 🔄 **DTO Pattern Implementation & Controller/Service Refactoring**
+  - Implemented **Data Transfer Objects (DTOs)** for clean separation of API contracts from domain models
+  - Created `CategoryRequest` DTO for incoming POST/PUT requests with `categoryId` and `categoryName` fields
+  - Created `CategoryResponse` DTO for outgoing GET responses, containing a list of `CategoryRequest` objects
+  - **Refactored CategoryController** to accept and return DTOs instead of domain models
+    - All endpoints now use `CategoryRequest` and `CategoryResponse` for data serialization
+    - Cleaner API contracts that don't expose internal domain model structure
+  - **Refactored CategoryService interface** to work with DTOs:
+    - `getAllCategories()` returns `CategoryResponse` containing list of categories
+    - `createCategory(CategoryRequest)` accepts DTO and returns `CategoryRequest`
+    - `updateCategory(CategoryRequest, Long)` accepts DTO and returns `CategoryRequest`
+    - `deleteCategory(Long)` returns deleted `CategoryRequest`
+  - **Applied Lombok to DTOs** with `@Data`, `@NoArgsConstructor`, `@AllArgsConstructor` annotations
+  - **Enhanced GlobalExceptionHandler** to properly handle validation errors on DTOs
+    - `MethodArgumentNotValidException` handler provides detailed field-level error messages
+  - Benefits: Loose coupling between API and domain models, easier API versioning, better security (prevents over-exposure of data)
+
+**Previous Updates (February 15, 2026):**
 - ✅ **Input Validation Implementation**
   - Added **Jakarta Bean Validation** to Category model with `@NotBlank` annotation
   - Category name field now validates that input is not empty or whitespace
