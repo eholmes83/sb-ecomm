@@ -6,7 +6,6 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -34,22 +33,15 @@ public class CategoryController {
 
     @DeleteMapping("/admin/categories/{id}")
     public ResponseEntity<String> deleteCategory(@PathVariable Long id) {
-        try {
-             categoryService.deleteCategory(id);
-            return new ResponseEntity<>("Category with id: " + id + " deleted successfully", HttpStatus.OK);
-        } catch (ResponseStatusException e) {
-            return new ResponseEntity<>(e.getReason(), e.getStatusCode());
-        }
+            categoryService.deleteCategory(id);
+            return new ResponseEntity<>("Category with id " + id + " deleted successfully", HttpStatus.OK);
     }
 
     @PutMapping("/public/categories/{categoryId}")
-    public ResponseEntity<String> updateCategory(@RequestBody Category category,
+    public ResponseEntity<String> updateCategory(@Valid @RequestBody Category category,
                                                  @PathVariable Long categoryId) {
-        try {
-            categoryService.updateCategory(category, categoryId);
-            return new ResponseEntity<>("Category with id: " + categoryId + " updated successfully", HttpStatus.OK);
-        } catch (ResponseStatusException e) {
-            return new ResponseEntity<>(e.getReason(), e.getStatusCode());
-        }
+        categoryService.updateCategory(category, categoryId);
+        return new ResponseEntity<>("Category with id: " + categoryId + " updated successfully", HttpStatus.OK);
     }
+
 }
