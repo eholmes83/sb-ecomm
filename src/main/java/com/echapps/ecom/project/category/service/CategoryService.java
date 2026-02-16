@@ -1,14 +1,13 @@
 package com.echapps.ecom.project.category.service;
 
-import com.echapps.ecom.project.category.model.Category;
-
-import java.util.List;
+import com.echapps.ecom.project.category.dto.request.CategoryRequest;
+import com.echapps.ecom.project.category.dto.response.CategoryResponse;
 
 public interface CategoryService {
 
-    List<Category> getAllCategories();
-    void createCategory(Category category);
-    void deleteCategory(Long id);
-    void updateCategory(Category category, Long categoryId);
+    CategoryResponse getAllCategories();
+    CategoryRequest createCategory(CategoryRequest categoryRequest);
+    CategoryRequest deleteCategory(Long id);
+    CategoryRequest updateCategory(CategoryRequest categoryRequest, Long categoryId);
 
 }
