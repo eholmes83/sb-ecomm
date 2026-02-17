@@ -5,7 +5,7 @@ import com.echapps.ecom.project.category.dto.response.CategoryResponse;
 
 public interface CategoryService {
 
-    CategoryResponse getAllCategories();
+    CategoryResponse getAllCategories(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder);
     CategoryRequest createCategory(CategoryRequest categoryRequest);
     CategoryRequest deleteCategory(Long id);
     CategoryRequest updateCategory(CategoryRequest categoryRequest, Long categoryId);
