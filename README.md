@@ -30,7 +30,51 @@ This is a **living document** that evolves as I progress through a comprehensive
 
 ### 🔄 Recent Changes
 
-**Latest Updates (February 16, 2026):**
+**Latest Updates (February 17, 2026):**
+- 📄 **Standardized API Response Format with APIResponse DTO**
+  - Created `APIResponse` DTO (`message: String`, `isSuccess: boolean`) for standardized error/success responses
+  - Updated `GlobalExceptionHandler` to use `APIResponse` for all exception handlers
+  - `ResourceNotFoundException` now returns `APIResponse` with 404 status and `isSuccess=false`
+  - `APIException` now returns `APIResponse` with 400 status and `isSuccess=false`
+  - Provides consistent API response structure across all error scenarios
+  - Benefits: Clients can reliably parse error responses with consistent field structure
+
+- 📊 **Pagination & Sorting Implementation**
+  - Added pagination support to `getAllCategories()` endpoint with query parameters: `pageNumber`, `pageSize`, `sortBy`, `sortOrder`
+  - Implemented Spring Data JPA `Pageable` and `PageRequest` for database-level pagination
+  - Updated `CategoryResponse` DTO with pagination metadata: `pageNumber`, `pageSize`, `totalElements`, `totalPages`, `lastPage`
+  - Service layer now uses `Sort` and `Sort.Direction` to handle dynamic sorting by field and order
+  - Benefits: Scalable API that can handle large datasets without loading everything into memory
+
+- ⚙️ **Application Configuration Constants**
+  - Created `AppConstants` class with default values for pagination:
+    - `DEFAULT_PAGE_NUMBER = "0"`
+    - `DEFAULT_PAGE_SIZE = "50"`
+    - `DEFAULT_SORT_BY = "categoryId"`
+    - `DEFAULT_SORT_DIRECTION = "asc"`
+  - Controller uses these constants as `@RequestParam` default values
+  - Centralized configuration makes it easy to adjust API defaults in one place
+  - Benefits: Maintainable, consistent defaults across the application
+
+- 🔍 **Enhanced CategoryRepository with Custom Query Method**
+  - Added `findByCategoryName(String categoryName)` method for duplicate category checking
+  - Used in `createCategory()` to prevent duplicate category names
+  - Spring Data JPA automatically generates SQL query from method signature
+  - Benefits: Data integrity and prevention of duplicate entries
+
+- 🔄 **ObjectMapper Integration**
+  - Integrated Jackson `ObjectMapper` for automatic DTO-to-Entity and Entity-to-DTO conversion
+  - Eliminates manual mapping in service layer
+  - `createCategory()`, `deleteCategory()`, and `updateCategory()` now use mapper for conversions
+  - Used in pagination to convert `List<Category>` to `List<CategoryRequest>`
+  - Benefits: Reduced boilerplate code, consistent mapping logic
+
+- 📝 **Postman Collection Updated with Pagination & Sorting**
+  - Updated Postman collection to include pagination and sorting example requests
+  - Collection now demonstrates: `GET /api/v1/public/categories?pageNumber=0&pageSize=10&sortBy=categoryId&sortOrder=desc`
+  - Test data added to H2 database for pagination testing
+
+**Previous Updates (February 16, 2026):**
 - 🔄 **DTO Pattern Implementation & Controller/Service Refactoring**
   - Implemented **Data Transfer Objects (DTOs)** for clean separation of API contracts from domain models
   - Created `CategoryRequest` DTO for incoming POST/PUT requests with `categoryId` and `categoryName` fields
@@ -122,18 +166,25 @@ This is a **living document** that evolves as I progress through a comprehensive
 **✅ Implemented:**
 - 🏷️ **Category Management** - Complete CRUD operations with database persistence and clean architecture
   - ✅ CREATE - Add new categories (auto-generated IDs via database)
-  - ✅ READ - Retrieve all categories or specific categories
+  - ✅ READ - Retrieve all categories with pagination and sorting support
   - ✅ UPDATE - Modify existing category information
   - ✅ DELETE - Remove categories with proper error handling
   - ✅ **Database Persistence** - H2 in-memory database with JPA/Hibernate ORM
   - ✅ **Input Validation** - Jakarta Bean Validation with `@NotBlank` constraint on category name
   - ✅ **Lombok Integration** - Reduced boilerplate with auto-generated getters, setters, and constructors
   - ✅ **Separation of Concerns** - Service layer focuses on business logic, Controller handles HTTP responses
-  - ✅ **Clean Service Methods** - Service methods return `void` and throw exceptions for errors
+  - ✅ **Clean Service Methods** - Service methods return DTOs and throw exceptions for errors
   - ✅ HTTP status code management (200, 201, 400, 404)
   - ✅ Exception handling with meaningful error messages
   - ✅ REST API endpoints with proper response entities
   - ✅ **RESTful Design** - Clean separation between data operations and HTTP protocol concerns
+  - ✅ **Data Transfer Objects (DTOs)** - `CategoryRequest` and `CategoryResponse` for API contracts
+  - ✅ **Pagination & Sorting** - Query parameters for `pageNumber`, `pageSize`, `sortBy`, `sortOrder`
+  - ✅ **Standardized API Responses** - `APIResponse` DTO for consistent error response format
+  - ✅ **ObjectMapper Integration** - Automatic DTO-to-Entity and Entity-to-DTO conversions
+  - ✅ **Application Constants** - Centralized default values via `AppConstants` class
+  - ✅ **Custom Repository Methods** - `findByCategoryName()` for duplicate prevention
+  - ✅ **Duplicate Category Prevention** - Prevents creation of categories with existing names
 
 **🚧 In Development:**
 - 🛍️ Product catalog management
