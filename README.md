@@ -30,6 +30,41 @@ This is a **living document** that evolves as I progress through a comprehensive
 
 ### 🔄 Recent Changes
 
+**Latest Updates (February 23, 2026):**
+- 🏷️ **Product Management Feature - Complete Implementation**
+  - Created `Product` entity with full JPA integration and relationships to Category via `@ManyToOne`
+  - Product fields: `productId`, `productName`, `image`, `description`, `quantity`, `price`, `discount`, `specialPrice`
+  - Created `ProductRequest` DTO for incoming POST requests with all product fields
+  - Created `ProductResponse` DTO for outgoing responses containing a list of products
+  - Implemented `ProductService` interface with methods for complete product operations
+  - **Product Service Layer (ProductServiceImpl)** with advanced features:
+    - `addProduct()` - Creates product with automatic special price calculation (price - discount %)
+    - `getAllProducts()` - Retrieves all products with DTO conversion
+    - `searchByCategory()` - Find products by category with automatic price sorting (ascending)
+    - `searchProductsByKeyword()` - Full-text search on product names (case-insensitive)
+    - `deleteProduct()` - Removes product from database
+  - Implemented `ProductRepository` extending JpaRepository with custom query methods:
+    - `findByCategoryOrderByPriceAsc()` - Custom JPQL for category filtering with price sorting
+    - `findByProductNameLikeIgnoreCase()` - Wildcard search for keyword matching
+  - Created `ProductController` with 5 REST endpoints:
+    - `POST /api/v1/admin/categories/{categoryId}/product` - Add new product (201 CREATED)
+    - `GET /api/v1/public/products` - Get all products (200 OK)
+    - `GET /api/v1/public/categories/{categoryId}/products` - Get products by category (200 OK)
+    - `GET /api/v1/public/products/keyword/{keyword}` - Search by keyword (302 FOUND)
+    - `DELETE /api/v1/admin/products/{productId}` - Delete product (200 OK)
+  - **ObjectMapper Integration** - Uses Jackson for automatic DTO/Entity conversions
+  - **Error Handling** - ResourceNotFoundException for missing categories or products
+  - Files affected: Product.java, ProductRequest.java, ProductResponse.java, ProductService.java, ProductServiceImpl.java, ProductController.java, ProductRepository.java
+  - Benefits: Complete vertical slice architecture for Product feature, mirroring Category feature patterns, advanced search capabilities with JPQL queries
+
+- ✅ **Enhanced Category Validation with Size Constraint**
+  - Added `@Size` validation annotation to Category.categoryName field
+  - Constraint: Minimum 3 characters with message "Category name must be at least 3 characters"
+  - Strengthens data quality and prevents creation of too-short category names
+  - Works in conjunction with existing `@NotBlank` validation
+  - Files affected: Category.java
+  - Benefits: More robust input validation, better data consistency
+
 **Latest Updates (February 17, 2026):**
 - 📄 **Standardized API Response Format with APIResponse DTO**
   - Created `APIResponse` DTO (`message: String`, `isSuccess: boolean`) for standardized error/success responses
@@ -170,7 +205,7 @@ This is a **living document** that evolves as I progress through a comprehensive
   - ✅ UPDATE - Modify existing category information
   - ✅ DELETE - Remove categories with proper error handling
   - ✅ **Database Persistence** - H2 in-memory database with JPA/Hibernate ORM
-  - ✅ **Input Validation** - Jakarta Bean Validation with `@NotBlank` constraint on category name
+  - ✅ **Input Validation** - Jakarta Bean Validation with `@NotBlank` and `@Size` constraints on category name
   - ✅ **Lombok Integration** - Reduced boilerplate with auto-generated getters, setters, and constructors
   - ✅ **Separation of Concerns** - Service layer focuses on business logic, Controller handles HTTP responses
   - ✅ **Clean Service Methods** - Service methods return DTOs and throw exceptions for errors
@@ -186,14 +221,29 @@ This is a **living document** that evolves as I progress through a comprehensive
   - ✅ **Custom Repository Methods** - `findByCategoryName()` for duplicate prevention
   - ✅ **Duplicate Category Prevention** - Prevents creation of categories with existing names
 
+- 🛍️ **Product Management** - Complete CRUD operations with advanced search functionality
+  - ✅ CREATE - Add new products to categories with automatic special price calculation
+  - ✅ READ - Retrieve all products or filter by category
+  - ✅ SEARCH - Full-text keyword search on product names (case-insensitive)
+  - ✅ DELETE - Remove products with proper error handling
+  - ✅ **Database Persistence** - JPA integration with automatic relationships to categories
+  - ✅ **Input Validation** - Category relationship validation (prevents orphaned products)
+  - ✅ **Lombok Integration** - Clean Product entity with auto-generated methods
+  - ✅ **DTO Pattern** - ProductRequest and ProductResponse for API contracts
+  - ✅ **Advanced Queries** - Custom repository methods for category filtering and keyword search
+  - ✅ **Price Calculation** - Automatic special price computation (price - discount %)
+  - ✅ **Sorting** - Products automatically sorted by price when filtered by category
+  - ✅ **ObjectMapper Integration** - Seamless entity-to-DTO conversions
+  - ✅ **Error Handling** - Proper exceptions for missing categories or products
+  - ✅ REST endpoints for product operations: GET, POST, DELETE, SEARCH
+
 **🚧 In Development:**
-- 🛍️ Product catalog management
 - 🛒 Shopping cart functionality
 - 👤 User authentication and authorization
 - 📦 Order management system
 - 💳 Payment processing integration
 - 📊 Admin dashboard
-- 🔍 Product search and filtering
+- ⭐ Product ratings and reviews
 
 ## 🚀 Technology Stack
 
@@ -316,32 +366,52 @@ com.echapps.ecom.project/
 │   │   └── CategoryRepository.java (extends JpaRepository)
 │   ├── model/                    # ✅ Domain entities (JPA Entity with validation)
 │   │   └── Category.java (uses Lombok & Jakarta Bean Validation)
-│   ├── dto/                      # 🚧 Data transfer objects (planned)
-│   │   ├── CategoryResponse.java
-│   │   └── CreateCategoryRequest.java
+│   ├── dto/                      # ✅ Data transfer objects
+│   │   ├── request/
+│   │   │   └── CategoryRequest.java
+│   │   └── response/
+│   │       ├── CategoryResponse.java
+│   │       └── APIResponse.java (standardized error responses)
 │   ├── exception/                # 🚧 Feature-specific exceptions (planned)
-│   │   └── CategoryNotFoundException.java
 │   ├── validator/                # 🚧 Custom validation logic (planned)
-│   │   └── CategoryValidator.java
 │   ├── mapper/                   # 🚧 DTO/Entity mappers (planned)
-│   │   └── CategoryMapper.java
 │   └── config/                   # 🚧 Feature configuration (planned)
-│       └── CategoryConfiguration.java
-├── product/                      # Product Management Feature Slice (future)
-├── order/                        # Order Management Feature Slice (future)
-└── user/                         # User Management Feature Slice (future)
-
-shared/                           # Shared/Cross-cutting concerns (planned)
-├── exception/                    # Global exception handling
-├── config/                       # Application-wide configuration
-├── util/                         # Cross-cutting utilities
-└── constants/                    # Global constants
+│
+├── product/                      # Product Management Feature Slice
+│   ├── controller/               # ✅ REST endpoints (HTTP layer)
+│   │   └── ProductController.java (handles all product requests)
+│   ├── service/                  # ✅ Business logic layer
+│   │   ├── ProductService.java
+│   │   └── ProductServiceImpl.java (advanced search & pricing logic)
+│   ├── repository/               # ✅ Data access layer (JPA/Database)
+│   │   └── ProductRepository.java (custom JPQL queries)
+│   ├── model/                    # ✅ Domain entities (JPA Entity with relationships)
+│   │   └── Product.java (uses Lombok & Category relationship)
+│   ├── dto/                      # ✅ Data transfer objects
+│   │   ├── request/
+│   │   │   └── ProductRequest.java
+│   │   └── response/
+│   │       └── ProductResponse.java
+│   ├── exception/                # 🚧 Feature-specific exceptions (planned)
+│   ├── validator/                # 🚧 Custom validation logic (planned)
+│   ├── mapper/                   # 🚧 DTO/Entity mappers (planned)
+│   └── config/                   # 🚧 Feature configuration (planned)
+│
+└── shared/                       # Shared/Cross-cutting concerns
+    ├── exception/                # ✅ Global exception handling
+    │   ├── GlobalExceptionHandler.java
+    │   ├── APIException.java
+    │   └── ResourceNotFoundException.java
+    ├── config/                   # ✅ Application-wide configuration
+    │   └── AppConstants.java
+    ├── util/                     # 🚧 Cross-cutting utilities (planned)
+    └── constants/                # 🚧 Global constants (planned)
 ```
 
 > **Current Implementation Status:**  
 > ✅ = Implemented | 🚧 = Planned/In Development  
 > 
-> The Category slice now has **full database persistence** using Spring Data JPA and H2 in-memory database, **input validation** using Jakarta Bean Validation, and **Lombok** for cleaner code. The repository layer is fully implemented and the service layer uses JPA for all data operations. Future iterations will add DTOs for better API contracts, custom exceptions, custom validators, and mappers to complete the vertical slice architecture.
+> Both Category and Product features now have **full vertical slice implementations** with all CRUD operations, validation, DTOs, repositories, and service layers. The Product feature includes advanced search capabilities (keyword search, category filtering) and special pricing calculations. Shared exception handling is centralized in the GlobalExceptionHandler for both features.
 
 #### Benefits of Vertical Slice Architecture
 
@@ -412,20 +482,33 @@ Once started, the application will be available at:
 ```
 GET /api/v1/public/categories
 ```
-Returns a list of all product categories.
+Returns a list of all product categories with pagination and sorting support.
+
+**Query Parameters:**
+- `pageNumber` - Page number (default: 0)
+- `pageSize` - Items per page (default: 50)
+- `sortBy` - Field to sort by (default: categoryId)
+- `sortOrder` - Sort direction: "asc" or "desc" (default: asc)
 
 **Response:** `200 OK`
 ```json
-[
-  {
-    "categoryId": 1,
-    "categoryName": "Electronics"
-  },
-  {
-    "categoryId": 2,
-    "categoryName": "Clothing"
-  }
-]
+{
+  "content": [
+    {
+      "categoryId": 1,
+      "categoryName": "Electronics"
+    },
+    {
+      "categoryId": 2,
+      "categoryName": "Clothing"
+    }
+  ],
+  "pageNumber": 0,
+  "pageSize": 10,
+  "totalElements": 2,
+  "totalPages": 1,
+  "lastPage": true
+}
 ```
 
 **Create Category**
@@ -441,20 +524,24 @@ Creates a new product category. Category ID is auto-generated.
 
 **Validation Rules:**
 - `categoryName` is required (cannot be blank, null, or whitespace only)
-- Validation is performed using Jakarta Bean Validation
+- Minimum length: 3 characters
+- Must not duplicate existing categories
 
 **Response:** `201 CREATED`
-```
-Category created successfully
+```json
+{
+  "categoryId": 1,
+  "categoryName": "Electronics"
+}
 ```
 
 **Response (Validation Error):** `400 BAD REQUEST`
 ```json
 {
-  "timestamp": "2026-02-15T16:30:00.000+00:00",
+  "timestamp": "2026-02-23T16:30:00.000+00:00",
   "status": 400,
   "error": "Bad Request",
-  "message": "Category name is required",
+  "message": "Category name must be at least 3 characters",
   "path": "/api/v1/public/categories"
 }
 ```
@@ -471,13 +558,19 @@ Content-Type: application/json
 Updates an existing category by ID.
 
 **Response:** `200 OK`
-```
-Category with id: 1 updated successfully
+```json
+{
+  "categoryId": 1,
+  "categoryName": "Updated Electronics"
+}
 ```
 
 **Response (Not Found):** `404 NOT FOUND`
-```
-Category not found
+```json
+{
+  "message": "Category not found",
+  "isSuccess": false
+}
 ```
 
 **Delete Category**
@@ -487,25 +580,184 @@ DELETE /api/v1/admin/categories/{id}
 Deletes a category by ID. Requires admin privileges.
 
 **Response:** `200 OK`
-```
-Category with id 1 deleted successfully
+```json
+{
+  "categoryId": 1,
+  "categoryName": "Electronics"
+}
 ```
 
 **Response (Not Found):** `404 NOT FOUND`
+```json
+{
+  "message": "Category not found",
+  "isSuccess": false
+}
 ```
-Category not found
+
+### Product Management
+
+**Add Product to Category**
+```
+POST /api/v1/admin/categories/{categoryId}/product
+Content-Type: application/json
+
+{
+  "productName": "iPhone 15",
+  "quantity": 50,
+  "price": 999.99,
+  "discount": 10,
+  "description": "Latest iPhone model"
+}
+```
+Creates a new product and automatically associates it with a category. Special price is calculated automatically as: `price - (discount% of price)`.
+
+**Response:** `201 CREATED`
+```json
+{
+  "productId": 1,
+  "productName": "iPhone 15",
+  "image": "default.png",
+  "quantity": 50,
+  "price": 999.99,
+  "discount": 10,
+  "specialPrice": 899.99
+}
+```
+
+**Response (Category Not Found):** `404 NOT FOUND`
+```json
+{
+  "message": "Category not found",
+  "isSuccess": false
+}
+```
+
+**Get All Products**
+```
+GET /api/v1/public/products
+```
+Retrieves all products from the catalog.
+
+**Response:** `200 OK`
+```json
+{
+  "content": [
+    {
+      "productId": 1,
+      "productName": "iPhone 15",
+      "image": "default.png",
+      "quantity": 50,
+      "price": 999.99,
+      "discount": 10,
+      "specialPrice": 899.99
+    }
+  ]
+}
+```
+
+**Get Products by Category**
+```
+GET /api/v1/public/categories/{categoryId}/products
+```
+Retrieves all products in a specific category, sorted by price in ascending order.
+
+**Response:** `200 OK`
+```json
+{
+  "content": [
+    {
+      "productId": 1,
+      "productName": "iPhone 15",
+      "image": "default.png",
+      "quantity": 50,
+      "price": 999.99,
+      "discount": 10,
+      "specialPrice": 899.99
+    }
+  ]
+}
+```
+
+**Search Products by Keyword**
+```
+GET /api/v1/public/products/keyword/{keyword}
+```
+Performs case-insensitive search on product names using wildcard matching.
+
+**Example:** `/api/v1/public/products/keyword/iphone`
+
+**Response:** `302 FOUND`
+```json
+{
+  "content": [
+    {
+      "productId": 1,
+      "productName": "iPhone 15",
+      "image": "default.png",
+      "quantity": 50,
+      "price": 999.99,
+      "discount": 10,
+      "specialPrice": 899.99
+    }
+  ]
+}
+```
+
+**Delete Product**
+```
+DELETE /api/v1/admin/products/{productId}
+```
+Deletes a product by ID. Requires admin privileges.
+
+**Response:** `200 OK`
+```json
+{
+  "productId": 1,
+  "productName": "iPhone 15",
+  "image": "default.png",
+  "quantity": 50,
+  "price": 999.99,
+  "discount": 10,
+  "specialPrice": 899.99
+}
+```
+
+**Response (Not Found):** `404 NOT FOUND`
+```json
+{
+  "message": "Product not found",
+  "isSuccess": false
+}
 ```
 
 ### Example Usage with cURL
 
 ```bash
-# Get all categories
-curl http://localhost:8080/api/v1/public/categories
+# Get all categories with pagination
+curl "http://localhost:8080/api/v1/public/categories?pageNumber=0&pageSize=10&sortBy=categoryId&sortOrder=asc"
 
 # Create a category
 curl -X POST http://localhost:8080/api/v1/public/categories \
   -H "Content-Type: application/json" \
   -d '{"categoryName": "Electronics"}'
+
+# Add a product to a category
+curl -X POST http://localhost:8080/api/v1/admin/categories/1/product \
+  -H "Content-Type: application/json" \
+  -d '{"productName": "iPhone 15", "quantity": 50, "price": 999.99, "discount": 10}'
+
+# Get all products
+curl http://localhost:8080/api/v1/public/products
+
+# Get products by category (sorted by price)
+curl http://localhost:8080/api/v1/public/categories/1/products
+
+# Search products by keyword
+curl http://localhost:8080/api/v1/public/products/keyword/iphone
+
+# Delete a product
+curl -X DELETE http://localhost:8080/api/v1/admin/products/1
 
 # Update a category
 curl -X PUT http://localhost:8080/api/v1/public/categories/1 \
