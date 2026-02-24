@@ -17,8 +17,13 @@ A full-stack e-commerce application built with Spring Boot, designed to provide 
 - [Input Validation](#input-validation)
 - [Lombok Integration](#lombok-integration)
 - [Development](#development)
+- [Testing](#testing)
+- [Additional Resources](#additional-resources)
 - [Contributing](#contributing)
 - [License](#license)
+- [Authors](#authors)
+- [Issues](#issues)
+- [Support](#support)
 
 ## 🎯 Overview
 
@@ -30,7 +35,31 @@ This is a **living document** that evolves as I progress through a comprehensive
 
 ### 🔄 Recent Changes
 
-**Latest Updates (February 23, 2026):**
+**Latest Updates (February 24, 2026):**
+- 🔄 **Product Update Endpoint Implementation**
+  - Added `PUT /api/v1/admin/products/{productId}` endpoint for updating existing products
+  - Implemented `updateProduct()` method in ProductService interface and ProductServiceImpl
+  - **Update Logic Features:**
+    - Validates product exists before update (throws ResourceNotFoundException if not found)
+    - Updates all product fields: productName, description, quantity, price, discount
+    - Automatically recalculates special price based on new price and discount values
+    - Uses ObjectMapper for request DTO to entity conversion
+    - Preserves product ID and category relationship during update
+    - Does not update image field (maintains existing image)
+  - **Controller Integration:**
+    - Accepts ProductRequest DTO in request body
+    - Returns updated ProductRequest DTO with 200 OK status
+    - Path variable `productId` identifies the product to update
+  - **Service Layer Implementation:**
+    - Fetches existing product from database via ProductRepository
+    - Maps incoming DTO to entity using ObjectMapper
+    - Updates only modifiable fields (preserves image and category)
+    - Calls `calculateSpecialPrice()` helper method for price computation
+    - Persists updated product back to database
+  - Files affected: ProductController.java, ProductService.java, ProductServiceImpl.java
+  - Benefits: Complete CRUD functionality for Product feature, full update capability matching Category feature pattern, maintains data integrity through validation
+
+**Previous Updates (February 23, 2026):**
 - 🏷️ **Product Management Feature - Complete Implementation**
   - Created `Product` entity with full JPA integration and relationships to Category via `@ManyToOne`
   - Product fields: `productId`, `productName`, `image`, `description`, `quantity`, `price`, `discount`, `specialPrice`
@@ -224,6 +253,7 @@ This is a **living document** that evolves as I progress through a comprehensive
 - 🛍️ **Product Management** - Complete CRUD operations with advanced search functionality
   - ✅ CREATE - Add new products to categories with automatic special price calculation
   - ✅ READ - Retrieve all products or filter by category
+  - ✅ UPDATE - Modify existing product details with automatic special price recalculation
   - ✅ SEARCH - Full-text keyword search on product names (case-insensitive)
   - ✅ DELETE - Remove products with proper error handling
   - ✅ **Database Persistence** - JPA integration with automatic relationships to categories
@@ -235,7 +265,7 @@ This is a **living document** that evolves as I progress through a comprehensive
   - ✅ **Sorting** - Products automatically sorted by price when filtered by category
   - ✅ **ObjectMapper Integration** - Seamless entity-to-DTO conversions
   - ✅ **Error Handling** - Proper exceptions for missing categories or products
-  - ✅ REST endpoints for product operations: GET, POST, DELETE, SEARCH
+  - ✅ REST endpoints for product operations: GET, POST, PUT, DELETE, SEARCH
 
 **🚧 In Development:**
 - 🛒 Shopping cart functionality
@@ -704,6 +734,43 @@ Performs case-insensitive search on product names using wildcard matching.
 }
 ```
 
+**Update Product**
+```
+PUT /api/v1/admin/products/{productId}
+Content-Type: application/json
+
+{
+  "productName": "iPhone 15 Pro",
+  "description": "Latest iPhone Pro model with advanced features",
+  "quantity": 75,
+  "price": 1199.99,
+  "discount": 15
+}
+```
+Updates an existing product. Special price is automatically recalculated based on new price and discount values. Requires admin privileges.
+
+**Response:** `200 OK`
+```json
+{
+  "productId": 1,
+  "productName": "iPhone 15 Pro",
+  "image": "default.png",
+  "description": "Latest iPhone Pro model with advanced features",
+  "quantity": 75,
+  "price": 1199.99,
+  "discount": 15,
+  "specialPrice": 1019.99
+}
+```
+
+**Response (Not Found):** `404 NOT FOUND`
+```json
+{
+  "message": "Product not found with productId: 1",
+  "isSuccess": false
+}
+```
+
 **Delete Product**
 ```
 DELETE /api/v1/admin/products/{productId}
@@ -755,6 +822,11 @@ curl http://localhost:8080/api/v1/public/categories/1/products
 
 # Search products by keyword
 curl http://localhost:8080/api/v1/public/products/keyword/iphone
+
+# Update a product
+curl -X PUT http://localhost:8080/api/v1/admin/products/1 \
+  -H "Content-Type: application/json" \
+  -d '{"productName": "iPhone 15 Pro", "description": "Latest iPhone Pro model", "quantity": 75, "price": 1199.99, "discount": 15}'
 
 # Delete a product
 curl -X DELETE http://localhost:8080/api/v1/admin/products/1
