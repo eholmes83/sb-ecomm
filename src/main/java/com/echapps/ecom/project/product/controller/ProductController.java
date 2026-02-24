@@ -7,6 +7,9 @@ import com.echapps.ecom.project.product.service.ProductService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -53,5 +56,11 @@ public class ProductController {
     public ResponseEntity<ProductRequest> deleteProduct(@PathVariable Long productId) {
         ProductRequest productToDelete = productService.deleteProduct(productId);
         return new ResponseEntity<>(productToDelete, HttpStatus.OK);
+    }
+
+    @PutMapping("/admin/products/{productId}/image")
+    public ResponseEntity<ProductRequest> updateProductImage(@PathVariable Long productId, @RequestParam("image") MultipartFile image) throws IOException {
+        ProductRequest updatedProduct = productService.updateProductImage(productId, image);
+        return new ResponseEntity<>(updatedProduct, HttpStatus.OK);
     }
 }
