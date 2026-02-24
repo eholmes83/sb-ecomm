@@ -17,7 +17,6 @@ public class ProductServiceImpl implements ProductService {
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
     private final ObjectMapper objectMapper;
-    private final Double PERCENTAGE_RATE = 0.01;
 
     public ProductServiceImpl(CategoryRepository categoryRepository, ProductRepository productRepository, ObjectMapper objectMapper) {
         this.categoryRepository = categoryRepository;
@@ -26,14 +25,15 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ProductRequest addProduct(Product product, Long categoryId) {
+    public ProductRequest addProduct(ProductRequest productRequest, Long categoryId) {
         Category category = categoryRepository
                 .findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Category", "categoryId", categoryId));
 
+        Product product = objectMapper.convertValue(productRequest, Product.class);
         product.setImage("default.png");
         product.setCategory(category);
-        double specialPrice = product.getPrice() - ((product.getDiscount() * PERCENTAGE_RATE) * product.getPrice());
+        double specialPrice = calculateSpecialPrice(product.getPrice(), product.getDiscount());
         product.setSpecialPrice(specialPrice);
         Product savedProduct = productRepository.save(product);
         return objectMapper.convertValue(savedProduct, ProductRequest.class);
@@ -52,12 +52,12 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Product deleteProduct(Long productId) {
+    public ProductRequest deleteProduct(Long productId) {
         Product productToDelete = productRepository
                 .findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
         productRepository.deleteById(productId);
-        return productToDelete;
+        return objectMapper.convertValue(productToDelete, ProductRequest.class);
     }
 
     @Override
@@ -87,6 +87,29 @@ public class ProductServiceImpl implements ProductService {
         ProductResponse productResponse = new ProductResponse();
         productResponse.setContent(productRequest);
         return productResponse;
+    }
+
+    @Override
+    public ProductRequest updateProduct(ProductRequest productRequest, Long productId) {
+        Product productToUpdate = productRepository
+                .findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
+
+        Product product = objectMapper.convertValue(productRequest, Product.class);
+        productToUpdate.setProductName(product.getProductName());
+        productToUpdate.setDescription(product.getDescription());
+        productToUpdate.setQuantity(product.getQuantity());
+        productToUpdate.setPrice(product.getPrice());
+        productToUpdate.setDiscount(product.getDiscount());
+        productToUpdate.setSpecialPrice(calculateSpecialPrice(product.getPrice(), product.getDiscount()));
+
+        Product updatedProduct = productRepository.save(productToUpdate);
+        return objectMapper.convertValue(updatedProduct, ProductRequest.class);
+    }
+
+    public double calculateSpecialPrice(Double price, Double discount) {
+        Double PERCENTAGE_RATE = 0.01;
+        return price - ((discount * PERCENTAGE_RATE) * price);
     }
 
 }

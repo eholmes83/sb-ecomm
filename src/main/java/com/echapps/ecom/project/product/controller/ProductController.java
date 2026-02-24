@@ -3,7 +3,6 @@ package com.echapps.ecom.project.product.controller;
 
 import com.echapps.ecom.project.product.dto.request.ProductRequest;
 import com.echapps.ecom.project.product.dto.response.ProductResponse;
-import com.echapps.ecom.project.product.model.Product;
 import com.echapps.ecom.project.product.service.ProductService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,9 +19,9 @@ public class ProductController {
     }
 
     @PostMapping("/admin/categories/{categoryId}/product")
-    public ResponseEntity<ProductRequest> addProduct(@RequestBody Product product, @PathVariable Long categoryId) {
-       ProductRequest productRequest = productService.addProduct(product, categoryId);
-       return new ResponseEntity<>(productRequest, HttpStatus.CREATED);
+    public ResponseEntity<ProductRequest> addProduct(@RequestBody ProductRequest productRequest, @PathVariable Long categoryId) {
+       ProductRequest productToAdd = productService.addProduct(productRequest, categoryId);
+       return new ResponseEntity<>(productToAdd, HttpStatus.CREATED);
     }
 
     @GetMapping("/public/products")
@@ -44,9 +43,15 @@ public class ProductController {
         return new ResponseEntity<>(productResponse, HttpStatus.FOUND);
     }
 
+    @PutMapping("/admin/products/{productId}")
+    public ResponseEntity<ProductRequest> updateProduct(@RequestBody ProductRequest productRequest, @PathVariable Long productId) {
+        ProductRequest productToUpdate = productService.updateProduct(productRequest, productId);
+        return new ResponseEntity<>(productToUpdate, HttpStatus.OK);
+    }
+
     @DeleteMapping("/admin/products/{productId}")
-    public ResponseEntity<Product> deleteProduct(@PathVariable Long productId) {
-        Product productToDelete = productService.deleteProduct(productId);
+    public ResponseEntity<ProductRequest> deleteProduct(@PathVariable Long productId) {
+        ProductRequest productToDelete = productService.deleteProduct(productId);
         return new ResponseEntity<>(productToDelete, HttpStatus.OK);
     }
 }
