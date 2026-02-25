@@ -17,6 +17,7 @@ A full-stack e-commerce application built with Spring Boot, designed to provide 
 - [Input Validation](#input-validation)
 - [Lombok Integration](#lombok-integration)
 - [Development](#development)
+- [Troubleshooting](#troubleshooting-common-issues)
 - [Testing](#testing)
 - [Additional Resources](#additional-resources)
 - [Contributing](#contributing)
@@ -35,7 +36,27 @@ This is a **living document** that evolves as I progress through a comprehensive
 
 ### 🔄 Recent Changes
 
-**Latest Updates (February 24, 2026):**
+**Latest Updates (February 25, 2026):**
+- 🔧 **Infinite Recursion (StackOverflowError) Fix - Critical Bug Resolution**
+  - **Issue**: Application was throwing `StackOverflowError` with message "Infinite recursion at [No location information]"
+  - **Root Cause**: Bidirectional Product-Category relationship caused Jackson to infinitely serialize: Product → Category → Products → Category → ... (infinite loop)
+  - **Solutions Implemented**:
+    - ✅ Added `@JsonBackReference("category-products")` to Product entity's category field - prevents serialization of category when Product is inside a Category's products list
+    - ✅ Added `@JsonManagedReference("category-products")` to Category entity's products list - marks this side as the "managing" side of the relationship for serialization
+    - ✅ Added `@JsonIgnore` to ProductRequest DTO's category field - provides additional protection at the DTO layer
+  - **How It Works**: Jackson now knows to serialize the products list from Category, but when serializing each Product in that list, skip its category reference (breaks the circular chain)
+  - **Impact**: All API endpoints that return Product or Category data now serialize correctly without StackOverflowError
+  - Files affected: Product.java, Category.java, ProductRequest.java
+  - Benefits: Eliminates application crashes, maintains data integrity on both sides of the relationship, follows Jackson best practices for bidirectional relationships
+  - **Affected Endpoints Fixed**:
+    - ✅ `GET /api/v1/public/products` - Get all products
+    - ✅ `GET /api/v1/public/categories/{categoryId}/products` - Get products by category
+    - ✅ `POST /api/v1/admin/categories/{categoryId}/product` - Add product to category
+    - ✅ `GET /api/v1/public/categories` - Get all categories
+    - ✅ `POST /api/v1/public/categories` - Create category
+    - ✅ `PUT /api/v1/admin/products/{productId}` - Update product
+
+**Previous Updates (February 24, 2026):**
 - 🔄 **Product Update Endpoint Implementation**
   - Added `PUT /api/v1/admin/products/{productId}` endpoint for updating existing products
   - Implemented `updateProduct()` method in ProductService interface and ProductServiceImpl
@@ -1123,6 +1144,84 @@ Then run:
 ```bash
 ./mvnw clean install
 ```
+
+## 🔍 Troubleshooting Common Issues
+
+### Infinite Recursion (StackOverflowError)
+
+**Problem:** When calling API endpoints that return Product or Category data, the application crashes with:
+```
+Exception in thread "http-nio-8080-exec-1" java.lang.StackOverflowError
+	at [No location information]
+```
+
+**Root Cause:** 
+The application has a bidirectional relationship between Product and Category entities. When Jackson (Spring's JSON serializer) tries to convert entities to JSON, it encounters a circular reference:
+- Product has a reference to Category
+- Category has a list of Products
+- Each Product in the list references Category again → infinite loop
+
+**Solution (Already Implemented):**
+The application uses Jackson's `@JsonManagedReference` and `@JsonBackReference` annotations to control serialization:
+
+1. **Category.java** - Marks products list as the "managed" side:
+   ```java
+   @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
+   @JsonManagedReference("category-products")
+   private List<Product> products;
+   ```
+
+2. **Product.java** - Marks category as the "back reference" (not serialized when coming from Category):
+   ```java
+   @ManyToOne
+   @JoinColumn(name = "category_id")
+   @JsonBackReference("category-products")
+   private Category category;
+   ```
+
+**Verification:**
+Test these endpoints to confirm the fix works:
+```bash
+# Should return products without circular references
+curl http://localhost:8080/api/v1/public/products
+
+# Should return categories with product lists
+curl http://localhost:8080/api/v1/public/categories
+```
+
+**If Issue Persists:**
+1. Verify both `@JsonManagedReference` and `@JsonBackReference` use the same reference name: `"category-products"`
+2. Rebuild and restart the application: `./mvnw clean install && ./mvnw spring-boot:run`
+3. Check that Product.java has `@JsonBackReference` and Category.java has `@JsonManagedReference`
+4. Clear the H2 database and restart fresh
+
+**Alternative Solutions (If Annotations Don't Work):**
+
+1. **Use `@JsonIdentityInfo`** - Serializes objects by ID instead of duplicating:
+   ```java
+   @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "productId")
+   public class Product { ... }
+   ```
+
+2. **Use DTOs** - Create separate DTOs that don't have circular references:
+   ```java
+   // ProductWithoutCategoryDTO - Product without category
+   // CategoryWithProductsDTO - Category with product summaries only
+   ```
+
+3. **Use `@Transient`** - Mark the field as non-persistent:
+   ```java
+   @Transient
+   @JsonIgnore
+   private Category category;
+   ```
+
+**Prevention Going Forward:**
+When creating new bidirectional relationships:
+- Always add `@JsonManagedReference` to the "managing" side (the side that should be fully serialized)
+- Always add `@JsonBackReference` to the "back" side (the reverse reference that should be hidden)
+- Use matching reference names on both annotations
+- Test serialization immediately after creating the relationship
 
 ## 🧪 Testing
 
