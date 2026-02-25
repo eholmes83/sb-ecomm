@@ -1,6 +1,6 @@
 package com.echapps.ecom.project.product.dto.request;
 
-
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,4 +17,8 @@ public class ProductRequest {
     private Double price;
     private Double discount;
     private Double specialPrice;
+
+    // Ignored to prevent circular reference serialization with Category entity
+    @JsonIgnore
+    private Object category;
 }

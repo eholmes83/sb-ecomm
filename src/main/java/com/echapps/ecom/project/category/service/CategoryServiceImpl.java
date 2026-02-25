@@ -37,12 +37,12 @@ public class CategoryServiceImpl implements CategoryService {
             throw new APIException("No categories found!");
         }
 
-        List<CategoryRequest> categoryRequests = categories.stream()
+        List<CategoryRequest> categoryRequest = categories.stream()
                 .map(category -> mapper.convertValue(category, CategoryRequest.class))
                 .toList();
 
         CategoryResponse categoryResponse = new CategoryResponse();
-        categoryResponse.setContent(categoryRequests);
+        categoryResponse.setContent(categoryRequest);
         categoryResponse.setPageNumber(categoryPage.getNumber());
         categoryResponse.setPageSize(categoryPage.getSize());
         categoryResponse.setTotalElements(categoryPage.getTotalElements());

@@ -1,4 +1,4 @@
-package com.echapps.ecom.project.product.service;
+package com.echapps.ecom.project.product.service.file;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
