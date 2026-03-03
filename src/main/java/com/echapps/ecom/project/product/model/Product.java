@@ -1,6 +1,7 @@
 package com.echapps.ecom.project.product.model;
 
 import com.echapps.ecom.project.category.model.Category;
+import com.echapps.ecom.project.db.model.User;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -8,11 +9,14 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString
+@Table(name = "products")
 public class Product {
 
     @Id
@@ -22,7 +26,6 @@ public class Product {
     @NotBlank
     @Size(min = 3, message = "Product name must be at least 3 characters long")
     private String productName;
-
     private String image;
 
     @NotBlank
@@ -32,6 +35,10 @@ public class Product {
     private Double price;
     private Double discount;
     private Double specialPrice;
+
+    @ManyToOne
+    @JoinColumn(name = "seller_id")
+    private User user;
 
     @ManyToOne
     @JoinColumn(name = "category_id")
