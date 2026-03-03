@@ -36,7 +36,75 @@ This is a **living document** that evolves as I progress through a comprehensive
 
 ### 🔄 Recent Changes
 
-**Latest Updates (February 25, 2026):**
+**Latest Updates (March 3, 2026):**
+- 🔐 **User Authentication & JWT Token Security Implementation - Major Feature Release**
+  - **Created comprehensive user authentication system** with JWT token-based security
+  - **User Entity (`User.java`)** - Complete user model with authentication fields:
+    - Fields: `userId`, `userName`, `email`, `password` with validation constraints
+    - Unique constraints on `userName` and `email` to prevent duplicates
+    - Validation: `@NotBlank`, `@Size`, `@Email` annotations for input validation
+    - Relationships: `@ManyToMany` to `Role` (eager loading), `@OneToMany` to `Product` (for seller products), `@ManyToMany` to `Address`
+    - Constructor: `User(userName, email, password)` for convenient object creation
+  - **Role-Based Access Control (RBAC):**
+    - `Role` entity with enum-based role names via `AppRole` enum
+    - `AppRole` enum with three roles: `ROLE_USER`, `ROLE_SELLER`, `ROLE_ADMIN`
+    - Many-to-Many relationship between User and Role with eager loading for permission checks
+  - **Address Management (`Address.java`)**:
+    - Complete address entity with fields: `addressId`, `street`, `city`, `state`, `country`, `postalCode`
+    - Input validation on all fields: `@NotBlank`, `@Size` with custom error messages
+    - Many-to-Many relationship with User for multi-address support per user
+    - Marked with `@ToString.Exclude` to prevent circular reference issues
+  - **JWT Token Generation & Validation (`JwtUtils.java`)**:
+    - `getJwtFromRequestHeader()` - Extracts JWT from Authorization header (Bearer token format)
+    - `generateTokenFromUsername()` - Creates JWT with username subject, issuedAt, expiration, signed with secret key
+    - `getUserNameFromJwt()` - Extracts username from JWT payload
+    - `key()` - Generates signing key from secret using HMAC-SHA256
+    - `validateToken()` - Validates JWT signature, expiration, format with exception handling for expired/malformed tokens
+    - Configurable expiration time via `spring.app.jwtExpirationInMs` property
+  - **Authentication Token Filter (`AuthTokenFilter.java`)**:
+    - Spring's `OncePerRequestFilter` for JWT validation on every request
+    - `doFilterInternal()` - Intercepts requests, validates JWT, sets SecurityContext
+    - Extracts username from token, loads UserDetails from database
+    - Creates `UsernamePasswordAuthenticationToken` with user authorities
+    - Debug logging at each step for troubleshooting authentication flow
+    - Gracefully handles invalid tokens without blocking request chain
+  - **JWT Exception Handler (`AuthEntryPointJwt.java`)**:
+    - Implements `AuthenticationEntryPoint` for handling authentication errors
+    - Returns standardized JSON error response with: status, error, message, path
+    - Sets HTTP status to 401 UNAUTHORIZED for failed authentication
+    - Content-Type set to APPLICATION/JSON for proper client parsing
+  - **Login DTOs:**
+    - `LoginRequest` - Accepts username and password for authentication
+    - `LoginResponse` - Returns JWT token, username, and list of roles after successful login
+  - **Configuration & Properties:**
+    - `spring.app.jwtSecret` - Secret key for signing JWT tokens (configured in application.properties)
+    - `spring.app.jwtExpirationInMs` - Token expiration time in milliseconds (default: 3600000 = 1 hour)
+    - DEBUG logging enabled for Spring Security and authentication components in application.properties
+  - **Files Created/Modified:**
+    - New: `User.java`, `Role.java`, `AppRole.java`, `Address.java`
+    - New: `JwtUtils.java`, `AuthTokenFilter.java`, `AuthEntryPointJwt.java`
+    - New: `LoginRequest.java`, `LoginResponse.java`
+    - Modified: `Product.java` (added @ManyToOne relationship to User for seller products)
+    - Modified: `application.properties` (added JWT configuration)
+  - **Security Features Implemented:**
+    - ✅ Password-based authentication with JWT tokens
+    - ✅ Role-based authorization (ROLE_USER, ROLE_SELLER, ROLE_ADMIN)
+    - ✅ Bearer token authentication on protected endpoints
+    - ✅ Token expiration after 1 hour for security
+    - ✅ Address management for user delivery/billing addresses
+    - ✅ Comprehensive input validation on all user/address fields
+    - ✅ Debug logging for authentication troubleshooting
+  - **Benefits:**
+    - Enterprise-grade security with industry-standard JWT tokens
+    - Stateless authentication (no session storage required)
+    - Role-based endpoint protection for admin/seller/user features
+    - Scalable authorization system for multi-tenant scenarios
+    - Flexible user profile management with addresses
+    - Seller capability to manage their own products
+    - Clear separation of concerns between authentication and business logic
+    - Comprehensive logging for security auditing
+
+**Previous Updates (February 25, 2026):**
 - 🔧 **Infinite Recursion (StackOverflowError) Fix - Critical Bug Resolution**
   - **Issue**: Application was throwing `StackOverflowError` with message "Infinite recursion at [No location information]"
   - **Root Cause**: Bidirectional Product-Category relationship caused Jackson to infinitely serialize: Product → Category → Products → Category → ... (infinite loop)
@@ -249,6 +317,23 @@ This is a **living document** that evolves as I progress through a comprehensive
 ### Key Features
 
 **✅ Implemented:**
+- 👤 **User Authentication & JWT Security** - Enterprise-grade token-based authentication
+  - ✅ Password-based user registration and login with JWT token generation
+  - ✅ Secure token validation on every protected request
+  - ✅ Role-Based Access Control (RBAC) with three roles: ROLE_USER, ROLE_SELLER, ROLE_ADMIN
+  - ✅ Token expiration after 1 hour for enhanced security
+  - ✅ Bearer token authentication in request headers
+  - ✅ Comprehensive input validation on user credentials (username, email, password)
+  - ✅ Unique constraints on username and email to prevent duplicates
+  - ✅ Debug logging for authentication troubleshooting
+  - ✅ Standardized JSON error responses for authentication failures
+
+- 📍 **Address Management** - Complete user address support
+  - ✅ Multiple addresses per user via Many-to-Many relationship
+  - ✅ Address fields: street, city, state, country, postal code
+  - ✅ Input validation on all address fields with minimum length constraints
+  - ✅ Custom error messages for validation failures
+
 - 🏷️ **Category Management** - Complete CRUD operations with database persistence and clean architecture
   - ✅ CREATE - Add new categories (auto-generated IDs via database)
   - ✅ READ - Retrieve all categories with pagination and sorting support
@@ -302,8 +387,10 @@ This is a **living document** that evolves as I progress through a comprehensive
 - **Spring Boot**: 4.0.2
 - **Build Tool**: Maven
 - **Framework**: Spring MVC
+- **Security**: Spring Security with JWT Token Authentication
 - **ORM**: Spring Data JPA / Hibernate
 - **Database**: H2 (In-Memory for Development)
+- **JSON Processing**: Jackson (Serialization/Deserialization)
 - **Validation**: Jakarta Bean Validation (Spring Boot Starter Validation)
 - **Development Tools**: 
   - Spring Boot DevTools (Hot Reload)
@@ -314,11 +401,14 @@ This is a **living document** that evolves as I progress through a comprehensive
 - `spring-boot-starter-webmvc` - Web MVC framework for building RESTful APIs
 - `spring-boot-starter-data-jpa` - Spring Data JPA for database persistence
 - `spring-boot-starter-validation` - Jakarta Bean Validation for input validation
+- `spring-boot-starter-security` - Spring Security framework for authentication and authorization
+- `jjwt` - JSON Web Token (JWT) library for token generation and validation
 - `h2` - In-memory relational database for development/testing
 - `spring-boot-h2console` - H2 database browser console
 - `spring-boot-devtools` - Development tools for automatic restart and live reload
 - `lombok` (v1.18.42) - Annotation-based code generation (getters, setters, constructors, etc.)
 - `spring-boot-starter-webmvc-test` - Testing support for Spring MVC applications
+- `jackson-databind` - JSON serialization/deserialization with advanced features (@JsonBackReference, @JsonManagedReference, @JsonIgnore)
 
 ## 📦 Prerequisites
 
