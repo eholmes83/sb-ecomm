@@ -36,7 +36,56 @@ This is a **living document** that evolves as I progress through a comprehensive
 
 ### 🔄 Recent Changes
 
-**Latest Updates (March 3, 2026):**
+**Latest Updates (March 5, 2026):**
+- 🔐 **Spring Security Integration & UserDetails Implementation - Enhancement Update**
+  - **UserDetails Service Implementation (`UserDetailsServiceImpl.java`)**:
+    - Implements Spring Security's `UserDetailsService` interface for loading user authentication data
+    - `loadUserByUsername()` method queries UserRepository to fetch User by username
+    - Throws `UsernameNotFoundException` with descriptive message if user not found
+    - Marked with `@Transactional` for lazy-loading relationship management
+    - Enables Spring Security to retrieve user credentials for authentication verification
+  - **UserDetails Implementation (`UserDetailsImpl.java`)**:
+    - Implements Spring Security's `UserDetails` interface for user authentication principal
+    - Contains fields: `id`, `userName`, `email`, `password`, `authorities`
+    - **Key Methods:**
+      - `build(User user)` - Static factory method that converts Domain User entity to UserDetails
+      - Extracts roles from User and converts to `SimpleGrantedAuthority` collection
+      - Enables Spring Security to check user permissions and role-based access
+    - Password field marked with `@JsonIgnore` to prevent serialization in responses
+    - Implements all UserDetails contract methods: `getUsername()`, `getPassword()`, `getAuthorities()`, etc.
+  - **User Entity Enhancement (`User.java`)**:
+    - Updated relationship configurations with proper cascade and fetch strategies
+    - `@ManyToMany` to Role now uses `FetchType.EAGER` for role loading during authentication
+    - `@ManyToMany` to Address with proper cascade handling for address management
+    - `@OneToMany` to Product with orphan removal for seller product management
+    - Proper validation annotations in place for all user fields
+  - **Address Model Validation Updates (`Address.java`)**:
+    - Enhanced size constraints on all fields: street (min 5), city (min 2), state (min 2), country (min 2), postalCode (min 5)
+    - Custom validation error messages for each field for better API feedback
+    - Maintains `@ToString.Exclude` on user relationship to prevent circular references
+    - Ready for user profile address management endpoints
+  - **UserRepository Enhancement (`UserRepository.java`)**:
+    - `findByUserName(String username)` - Returns Optional<User> for secure null handling
+    - Enables authentication lookup by username during login process
+    - Spring Data JPA automatically generates query from method signature
+  - **Security Integration Points:**
+    - ✅ UserDetailsService enables Spring Security authentication filter to load user credentials
+    - ✅ UserDetailsImpl carries user authentication data through Spring Security context
+    - ✅ Roles are eager-loaded for immediate access during authorization checks
+    - ✅ Integration ready for authentication endpoints and role-based access control
+  - **Files Created/Modified:**
+    - New: `UserDetailsServiceImpl.java`, `UserDetailsImpl.java`
+    - Modified: `User.java` (enhanced relationships with cascade/fetch strategies)
+    - Modified: `Address.java` (enhanced validation constraints)
+    - Modified: `UserRepository.java` (added findByUserName method)
+  - **Benefits:**
+    - ✅ Seamless integration with Spring Security framework
+    - ✅ Proper role-based authorization checks enabled
+    - ✅ Secure user credential management during authentication flow
+    - ✅ Foundation for building login/registration endpoints
+    - ✅ Improved validation feedback for address management
+
+**Previous Updates (March 3, 2026):**
 - 🔐 **User Authentication & JWT Token Security Implementation - Major Feature Release**
   - **Created comprehensive user authentication system** with JWT token-based security
   - **User Entity (`User.java`)** - Complete user model with authentication fields:
@@ -318,15 +367,21 @@ This is a **living document** that evolves as I progress through a comprehensive
 
 **✅ Implemented:**
 - 👤 **User Authentication & JWT Security** - Enterprise-grade token-based authentication
-  - ✅ Password-based user registration and login with JWT token generation
-  - ✅ Secure token validation on every protected request
+  - ✅ User entity with complete JPA mapping and relationships (roles, addresses, seller products)
   - ✅ Role-Based Access Control (RBAC) with three roles: ROLE_USER, ROLE_SELLER, ROLE_ADMIN
-  - ✅ Token expiration after 1 hour for enhanced security
+  - ✅ Spring Security integration with UserDetailsService for credential loading
+  - ✅ UserDetails implementation (UserDetailsImpl) for authentication principal
+  - ✅ JWT token generation and validation with configurable expiration (1 hour default)
+  - ✅ AuthTokenFilter for JWT validation on every request
   - ✅ Bearer token authentication in request headers
+  - ✅ AuthEntryPointJwt for standardized JSON error responses (401 UNAUTHORIZED)
   - ✅ Comprehensive input validation on user credentials (username, email, password)
   - ✅ Unique constraints on username and email to prevent duplicates
-  - ✅ Debug logging for authentication troubleshooting
-  - ✅ Standardized JSON error responses for authentication failures
+  - ✅ Debug logging for authentication and authorization troubleshooting
+  - ✅ Password-based authentication with JWT token generation (ready for login endpoints)
+  - 🚧 User registration endpoint (planned)
+  - 🚧 User login endpoint (planned)
+  - 🚧 User profile management endpoints (planned)
 
 - 📍 **Address Management** - Complete user address support
   - ✅ Multiple addresses per user via Many-to-Many relationship
@@ -374,12 +429,16 @@ This is a **living document** that evolves as I progress through a comprehensive
   - ✅ REST endpoints for product operations: GET, POST, PUT, DELETE, SEARCH
 
 **🚧 In Development:**
+- 👤 User Registration & Login Endpoints (authentication flow)
+- 👥 User Profile Management (view/update user information)
+- 📍 Address Management Endpoints (add/update/delete user addresses)
 - 🛒 Shopping cart functionality
-- 👤 User authentication and authorization
 - 📦 Order management system
 - 💳 Payment processing integration
 - 📊 Admin dashboard
 - ⭐ Product ratings and reviews
+- 🔍 Advanced search and filtering
+- 📧 Email notifications
 
 ## 🚀 Technology Stack
 
@@ -537,6 +596,35 @@ com.echapps.ecom.project/
 │   ├── validator/                # 🚧 Custom validation logic (planned)
 │   ├── mapper/                   # 🚧 DTO/Entity mappers (planned)
 │   └── config/                   # 🚧 Feature configuration (planned)
+│
+├── user/                         # User Management Feature Slice
+│   ├── controller/               # 🚧 REST endpoints for registration/profile (planned)
+│   ├── service/                  # 🚧 Business logic layer (planned)
+│   ├── repository/               # ✅ Data access layer (JPA/Database)
+│   │   └── UserRepository.java (extends JpaRepository, findByUserName method)
+│   ├── model/                    # ✅ Domain entities (JPA Entity with relationships)
+│   │   └── User.java (with roles, addresses, seller products relationships)
+│   ├── dto/                      # 🚧 Data transfer objects (planned)
+│   ├── exception/                # 🚧 Feature-specific exceptions (planned)
+│   ├── validator/                # 🚧 Custom validation logic (planned)
+│   └── mapper/                   # 🚧 DTO/Entity mappers (planned)
+│
+├── security/                     # Security & Authentication Feature Slice
+│   ├── jwt/                      # ✅ JWT token handling
+│   │   ├── JwtUtils.java (token generation, validation, extraction)
+│   │   ├── AuthTokenFilter.java (OncePerRequestFilter for JWT validation)
+│   │   ├── AuthEntryPointJwt.java (authentication error handling)
+│   │   ├── LoginRequest.java (DTO for login credentials)
+│   │   └── LoginResponse.java (DTO for token response)
+│   └── services/                 # ✅ Spring Security integration
+│       ├── UserDetailsServiceImpl.java (loads user from database)
+│       └── UserDetailsImpl.java (user authentication principal)
+│
+├── db/                           # Database Models Feature Slice
+│   └── model/                    # ✅ Shared database entities
+│       ├── Role.java (role entity for RBAC)
+│       ├── AppRole.java (enum for role types: USER, SELLER, ADMIN)
+│       └── Address.java (user address entity with validation)
 │
 └── shared/                       # Shared/Cross-cutting concerns
     ├── exception/                # ✅ Global exception handling
