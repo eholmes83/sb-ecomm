@@ -1,7 +1,7 @@
 package com.echapps.ecom.project.product.model;
 
 import com.echapps.ecom.project.category.model.Category;
-import com.echapps.ecom.project.db.model.User;
+import com.echapps.ecom.project.user.model.User;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;

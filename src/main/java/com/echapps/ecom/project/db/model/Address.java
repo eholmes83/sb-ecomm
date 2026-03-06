@@ -1,6 +1,7 @@
 package com.echapps.ecom.project.db.model;
 
 
+import com.echapps.ecom.project.user.model.User;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
