@@ -36,7 +36,28 @@ This is a **living document** that evolves as I progress through a comprehensive
 
 ### 🔄 Recent Changes
 
-**Latest Updates (March 5, 2026):**
+**Latest Updates (March 9, 2026):**
+- 🔐 **Authentication API + Security Configuration Completion**
+  - Added `AuthController` with two authentication endpoints under `/api/v1/auth`:
+    - `POST /api/v1/auth/signup` - Registers a new user with optional role assignment
+    - `POST /api/v1/auth/signin` - Authenticates user credentials and returns JWT + role list
+  - Added `WebSecurityConfig` with:
+    - `SecurityFilterChain` + stateless session policy
+    - `DaoAuthenticationProvider` wired to `UserDetailsServiceImpl`
+    - `BCryptPasswordEncoder` bean for password hashing
+    - JWT filter integration (`AuthTokenFilter`) before `UsernamePasswordAuthenticationFilter`
+    - Public access matchers for auth/public endpoints and Swagger paths
+  - Added request/response DTOs for auth flow:
+    - `SignupRequest` (`username`, `email`, `password`, `role`)
+    - `LoginRequest` moved to `security/request`
+    - `UserLoginResponse` moved to `security/response`
+    - `MessageResponse` for standardized success/error messaging
+  - Added `RoleRepository` with `findByRoleName(AppRole)` to support role resolution during signup
+  - Added duplicate checks during registration using `UserRepository.existsByUserName()` and `UserRepository.existsByEmail()`
+  - Refactored model package ownership:
+    - `Address`, `Role`, and `AppRole` moved from `db/model` to `user/model`
+
+**Previous Updates (March 5, 2026):**
 - 🔐 **Spring Security Integration & UserDetails Implementation - Enhancement Update**
   - **UserDetails Service Implementation (`UserDetailsServiceImpl.java`)**:
     - Implements Spring Security's `UserDetailsService` interface for loading user authentication data
@@ -378,9 +399,9 @@ This is a **living document** that evolves as I progress through a comprehensive
   - ✅ Comprehensive input validation on user credentials (username, email, password)
   - ✅ Unique constraints on username and email to prevent duplicates
   - ✅ Debug logging for authentication and authorization troubleshooting
-  - ✅ Password-based authentication with JWT token generation (ready for login endpoints)
-  - 🚧 User registration endpoint (planned)
-  - 🚧 User login endpoint (planned)
+  - ✅ Password-based authentication with JWT token generation
+  - ✅ User registration endpoint (`POST /api/v1/auth/signup`)
+  - ✅ User login endpoint (`POST /api/v1/auth/signin`)
   - 🚧 User profile management endpoints (planned)
 
 - 📍 **Address Management** - Complete user address support
@@ -429,7 +450,6 @@ This is a **living document** that evolves as I progress through a comprehensive
   - ✅ REST endpoints for product operations: GET, POST, PUT, DELETE, SEARCH
 
 **🚧 In Development:**
-- 👤 User Registration & Login Endpoints (authentication flow)
 - 👥 User Profile Management (view/update user information)
 - 📍 Address Management Endpoints (add/update/delete user addresses)
 - 🛒 Shopping cart functionality
@@ -598,33 +618,39 @@ com.echapps.ecom.project/
 │   └── config/                   # 🚧 Feature configuration (planned)
 │
 ├── user/                         # User Management Feature Slice
-│   ├── controller/               # 🚧 REST endpoints for registration/profile (planned)
+│   ├── controller/               # 🚧 REST endpoints for profile/account management (planned)
 │   ├── service/                  # 🚧 Business logic layer (planned)
 │   ├── repository/               # ✅ Data access layer (JPA/Database)
-│   │   └── UserRepository.java (extends JpaRepository, findByUserName method)
-│   ├── model/                    # ✅ Domain entities (JPA Entity with relationships)
-│   │   └── User.java (with roles, addresses, seller products relationships)
+│   │   ├── UserRepository.java (findByUserName, existsByUserName, existsByEmail)
+│   │   └── RoleRepository.java (findByRoleName)
+│   ├── model/                    # ✅ Domain entities (JPA Entities)
+│   │   ├── User.java
+│   │   ├── Role.java
+│   │   ├── AppRole.java
+│   │   └── Address.java
 │   ├── dto/                      # 🚧 Data transfer objects (planned)
 │   ├── exception/                # 🚧 Feature-specific exceptions (planned)
 │   ├── validator/                # 🚧 Custom validation logic (planned)
 │   └── mapper/                   # 🚧 DTO/Entity mappers (planned)
 │
 ├── security/                     # Security & Authentication Feature Slice
+│   ├── config/                   # ✅ Security configuration
+│   │   └── WebSecurityConfig.java
+│   ├── controller/               # ✅ Authentication controller
+│   │   └── AuthController.java
 │   ├── jwt/                      # ✅ JWT token handling
-│   │   ├── JwtUtils.java (token generation, validation, extraction)
-│   │   ├── AuthTokenFilter.java (OncePerRequestFilter for JWT validation)
-│   │   ├── AuthEntryPointJwt.java (authentication error handling)
-│   │   ├── LoginRequest.java (DTO for login credentials)
-│   │   └── LoginResponse.java (DTO for token response)
+│   │   ├── JwtUtils.java
+│   │   ├── AuthTokenFilter.java
+│   │   └── AuthEntryPointJwt.java
+│   ├── request/                  # ✅ Authentication request DTOs
+│   │   ├── LoginRequest.java
+│   │   └── SignupRequest.java
+│   ├── response/                 # ✅ Authentication response DTOs
+│   │   ├── UserLoginResponse.java
+│   │   └── MessageResponse.java
 │   └── services/                 # ✅ Spring Security integration
-│       ├── UserDetailsServiceImpl.java (loads user from database)
-│       └── UserDetailsImpl.java (user authentication principal)
-│
-├── db/                           # Database Models Feature Slice
-│   └── model/                    # ✅ Shared database entities
-│       ├── Role.java (role entity for RBAC)
-│       ├── AppRole.java (enum for role types: USER, SELLER, ADMIN)
-│       └── Address.java (user address entity with validation)
+│       ├── UserDetailsServiceImpl.java
+│       └── UserDetailsImpl.java
 │
 └── shared/                       # Shared/Cross-cutting concerns
     ├── exception/                # ✅ Global exception handling
@@ -704,6 +730,66 @@ Once started, the application will be available at:
 - **Health Check**: `http://localhost:8080/actuator/health` (if actuator is added)
 
 ## 📡 API Endpoints
+
+### Authentication
+
+**Register User**
+```
+POST /api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "username": "newuser",
+  "email": "newuser@example.com",
+  "password": "password123",
+  "role": ["user"]
+}
+```
+Creates a new user account, checks duplicate username/email, hashes password with BCrypt, and assigns roles.
+
+**Response:** `200 OK`
+```json
+{
+  "message": "User registered successfully!"
+}
+```
+
+**Response (Duplicate Username/Email):** `400 BAD REQUEST`
+```json
+{
+  "message": "Error: Username is already taken!"
+}
+```
+
+**Authenticate User**
+```
+POST /api/v1/auth/signin
+Content-Type: application/json
+
+{
+  "username": "newuser",
+  "password": "password123"
+}
+```
+Authenticates credentials and returns JWT token plus granted roles.
+
+**Response:** `200 OK`
+```json
+{
+  "id": 1,
+  "jwt": "<token>",
+  "username": "newuser",
+  "roles": ["ROLE_USER"]
+}
+```
+
+**Response (Invalid Credentials):** `401 UNAUTHORIZED`
+```json
+{
+  "message": "Invalid username or password",
+  "isSuccessful": false
+}
+```
 
 ### Category Management
 
@@ -1333,7 +1419,7 @@ Exception in thread "http-nio-8080-exec-1" java.lang.StackOverflowError
 	at [No location information]
 ```
 
-**Root Cause:** 
+**Root Cause**: 
 The application has a bidirectional relationship between Product and Category entities. When Jackson (Spring's JSON serializer) tries to convert entities to JSON, it encounters a circular reference:
 - Product has a reference to Category
 - Category has a list of Products
