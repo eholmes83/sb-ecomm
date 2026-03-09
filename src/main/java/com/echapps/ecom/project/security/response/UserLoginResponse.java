@@ -1,4 +1,4 @@
-package com.echapps.ecom.project.security.jwt;
+package com.echapps.ecom.project.security.response;
 
 import lombok.Getter;
 import lombok.Setter;
