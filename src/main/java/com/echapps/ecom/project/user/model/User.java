@@ -1,7 +1,5 @@
 package com.echapps.ecom.project.user.model;
 
-import com.echapps.ecom.project.db.model.Address;
-import com.echapps.ecom.project.db.model.Role;
 import com.echapps.ecom.project.product.model.Product;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;

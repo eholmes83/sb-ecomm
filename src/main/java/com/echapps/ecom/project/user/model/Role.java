@@ -1,4 +1,4 @@
-package com.echapps.ecom.project.db.model;
+package com.echapps.ecom.project.user.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

@@ -1,4 +1,4 @@
-package com.echapps.ecom.project.db.model;
+package com.echapps.ecom.project.user.model;
 
 public enum AppRole {
     ROLE_USER,
