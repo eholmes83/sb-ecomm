@@ -46,7 +46,11 @@ This is a **living document** that evolves as I progress through a comprehensive
     - `DaoAuthenticationProvider` wired to `UserDetailsServiceImpl`
     - `BCryptPasswordEncoder` bean for password hashing
     - JWT filter integration (`AuthTokenFilter`) before `UsernamePasswordAuthenticationFilter`
-    - Public access matchers for auth/public endpoints and Swagger paths
+    - Public access matchers for `/api/v1/auth/**`, Swagger/OpenAPI docs, H2 console, `/api/v1/test/**`, and `/images/**`
+    - All other routes currently require authentication via `.anyRequest().authenticated()`
+  - Added startup seed logic (`CommandLineRunner`) to create default roles and bootstrap users:
+    - Users: `user1`, `seller1`, `admin`
+    - Roles are assigned/updated on startup if missing
   - Added request/response DTOs for auth flow:
     - `SignupRequest` (`username`, `email`, `password`, `role`)
     - `LoginRequest` moved to `security/request`
@@ -731,6 +735,8 @@ Once started, the application will be available at:
 
 ## 📡 API Endpoints
 
+> **Security Note:** With the current `WebSecurityConfig`, endpoints outside `/api/v1/auth/**`, docs, H2 console, `/api/v1/test/**`, and `/images/**` require authentication.
+
 ### Authentication
 
 **Register User**
@@ -1086,43 +1092,58 @@ Deletes a product by ID. Requires admin privileges.
 ### Example Usage with cURL
 
 ```bash
-# Get all categories with pagination
-curl "http://localhost:8080/api/v1/public/categories?pageNumber=0&pageSize=10&sortBy=categoryId&sortOrder=asc"
+# Sign in and capture JWT (requires jq)
+TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/signin \
+  -H "Content-Type: application/json" \
+  -d '{"username":"user1","password":"password1"}' | jq -r '.jwt')
 
-# Create a category
+# Get all categories with JWT
+curl "http://localhost:8080/api/v1/public/categories?pageNumber=0&pageSize=10&sortBy=categoryId&sortOrder=asc" \
+  -H "Authorization: Bearer $TOKEN"
+
+# Create a category with JWT
 curl -X POST http://localhost:8080/api/v1/public/categories \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
   -d '{"categoryName": "Electronics"}'
 
-# Add a product to a category
+# Add a product to a category with JWT
 curl -X POST http://localhost:8080/api/v1/admin/categories/1/product \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
   -d '{"productName": "iPhone 15", "quantity": 50, "price": 999.99, "discount": 10}'
 
-# Get all products
-curl http://localhost:8080/api/v1/public/products
+# Get all products with JWT
+curl http://localhost:8080/api/v1/public/products \
+  -H "Authorization: Bearer $TOKEN"
 
-# Get products by category (sorted by price)
-curl http://localhost:8080/api/v1/public/categories/1/products
+# Get products by category with JWT (sorted by price)
+curl http://localhost:8080/api/v1/public/categories/1/products \
+  -H "Authorization: Bearer $TOKEN"
 
-# Search products by keyword
-curl http://localhost:8080/api/v1/public/products/keyword/iphone
+# Search products by keyword with JWT
+curl http://localhost:8080/api/v1/public/products/keyword/iphone \
+  -H "Authorization: Bearer $TOKEN"
 
-# Update a product
+# Update a product with JWT
 curl -X PUT http://localhost:8080/api/v1/admin/products/1 \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
   -d '{"productName": "iPhone 15 Pro", "description": "Latest iPhone Pro model", "quantity": 75, "price": 1199.99, "discount": 15}'
 
-# Delete a product
-curl -X DELETE http://localhost:8080/api/v1/admin/products/1
+# Delete a product with JWT
+curl -X DELETE http://localhost:8080/api/v1/admin/products/1 \
+  -H "Authorization: Bearer $TOKEN"
 
-# Update a category
+# Update a category with JWT
 curl -X PUT http://localhost:8080/api/v1/public/categories/1 \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
   -d '{"categoryName": "Updated Electronics"}'
 
-# Delete a category
-curl -X DELETE http://localhost:8080/api/v1/admin/categories/1
+# Delete a category with JWT
+curl -X DELETE http://localhost:8080/api/v1/admin/categories/1 \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 ## 🏗️ Service Layer Architecture
