@@ -36,7 +36,28 @@ This is a **living document** that evolves as I progress through a comprehensive
 
 ### 🔄 Recent Changes
 
-**Latest Updates (March 9, 2026):**
+**Latest Updates (March 10, 2026):**
+- 🍪 **JWT Cookie-Based Authentication Flow Update**
+  - Updated `JwtUtils` to support cookie-based JWT handling:
+    - Reads token from cookie via `getJwtFromCookie(HttpServletRequest request)`
+    - Generates auth cookie via `generateJwtCookie(UserDetailsImpl userDetails)`
+    - Added logout helper `getCleanJwtCookie()`
+  - Added `spring.ecom.app.jwtCookieName=sb-ecomm-jwt` in `application.properties`
+  - Updated `AuthTokenFilter` to parse JWT from cookie instead of Authorization header
+- 🔐 **Authentication Controller Endpoint Expansion (`AuthController`)**
+  - Added `GET /api/v1/auth/current-user` to return authenticated username
+  - Added `GET /api/v1/auth/user` to return authenticated user details + roles
+  - Added `POST /api/v1/auth/signout` to clear the JWT cookie
+  - Updated `POST /api/v1/auth/signin` to set `Set-Cookie` header and return `UserLoginResponse`
+- 🛒 **Cart Feature Foundation (In Progress)**
+  - Added cart domain models: `Cart`, `CartItem`
+  - Added cart repositories: `CartRepository`, `CartItemRepository`
+  - Added cart DTOs: `CartDTO`, `CartItemDTO`
+  - Added `CartService` + `CartServiceImpl` with initial add-to-cart flow
+  - Added cart endpoint scaffold: `POST /api/v1/cart/products/{productId}/quantity/{quantity}`
+  - Updated `User` and `Product` relationships for cart integration
+
+**Previous Updates (March 9, 2026):**
 - 🔐 **Authentication API + Security Configuration Completion**
   - Added `AuthController` with two authentication endpoints under `/api/v1/auth`:
     - `POST /api/v1/auth/signup` - Registers a new user with optional role assignment
@@ -398,7 +419,8 @@ This is a **living document** that evolves as I progress through a comprehensive
   - ✅ UserDetails implementation (UserDetailsImpl) for authentication principal
   - ✅ JWT token generation and validation with configurable expiration (1 hour default)
   - ✅ AuthTokenFilter for JWT validation on every request
-  - ✅ Bearer token authentication in request headers
+  - ⚠️ Bearer token authentication in request headers (**legacy approach, no longer used by current flow**)
+  - ✅ Cookie-based JWT authentication (`Set-Cookie` on signin + cookie parsing in filter)
   - ✅ AuthEntryPointJwt for standardized JSON error responses (401 UNAUTHORIZED)
   - ✅ Comprehensive input validation on user credentials (username, email, password)
   - ✅ Unique constraints on username and email to prevent duplicates
@@ -621,6 +643,23 @@ com.echapps.ecom.project/
 │   ├── mapper/                   # 🚧 DTO/Entity mappers (planned)
 │   └── config/                   # 🚧 Feature configuration (planned)
 │
+├── cart/                         # Cart Feature Slice
+│   ├── controller/               # 🚧 Endpoint scaffolding in progress
+│   │   └── CartController.java
+│   ├── service/                  # 🚧 Business logic in progress
+│   │   ├── CartService.java
+│   │   └── CartServiceImpl.java
+│   ├── repository/               # ✅ Data access layer (JPA/Database)
+│   │   ├── CartRepository.java
+│   │   └── CartItemRepository.java
+│   ├── model/                    # ✅ Domain entities
+│   │   ├── Cart.java
+│   │   └── CartItem.java
+│   └── dto/                      # ✅ Data transfer objects
+│       └── request/
+│           ├── CartDTO.java
+│           └── CartItemDTO.java
+│
 ├── user/                         # User Management Feature Slice
 │   ├── controller/               # 🚧 REST endpoints for profile/account management (planned)
 │   ├── service/                  # 🚧 Business logic layer (planned)
@@ -777,13 +816,13 @@ Content-Type: application/json
   "password": "password123"
 }
 ```
-Authenticates credentials and returns JWT token plus granted roles.
+Authenticates credentials, returns roles, and sets JWT in an HTTP cookie (`Set-Cookie`).
 
 **Response:** `200 OK`
 ```json
 {
   "id": 1,
-  "jwt": "<token>",
+  "jwt": "sb-ecomm-jwt=<token>; Path=/api/v1; Max-Age=86400",
   "username": "newuser",
   "roles": ["ROLE_USER"]
 }
@@ -796,6 +835,32 @@ Authenticates credentials and returns JWT token plus granted roles.
   "isSuccessful": false
 }
 ```
+
+**Get Current Username**
+```
+GET /api/v1/auth/current-user
+```
+Returns the username from the current authenticated principal.
+
+**Get Current User Details**
+```
+GET /api/v1/auth/user
+```
+Returns current user id, username, and role list.
+
+**Sign Out User**
+```
+POST /api/v1/auth/signout
+```
+Clears the JWT cookie and signs the user out.
+
+### Cart Management (Work in Progress)
+
+**Add Product to Cart**
+```
+POST /api/v1/cart/products/{productId}/quantity/{quantity}
+```
+Initial add-to-cart endpoint scaffold. Uses the authenticated user context and cart service flow under active development.
 
 ### Category Management
 
@@ -1091,480 +1156,99 @@ Deletes a product by ID. Requires admin privileges.
 
 ### Example Usage with cURL
 
+#### Cookie-based auth (current)
+
 ```bash
-# Sign in and capture JWT (requires jq)
+# Sign in and store auth cookie
+curl -s -c cookies.txt -X POST http://localhost:8080/api/v1/auth/signin \
+  -H "Content-Type: application/json" \
+  -d '{"username":"user1","password":"password1"}'
+
+# Get current authenticated user
+curl -s -b cookies.txt http://localhost:8080/api/v1/auth/user
+
+# Get all categories
+curl -s "http://localhost:8080/api/v1/public/categories?pageNumber=0&pageSize=10&sortBy=categoryId&sortOrder=asc" \
+  -b cookies.txt
+
+# Create a category
+curl -s -X POST http://localhost:8080/api/v1/public/categories \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{"categoryName": "Electronics"}'
+
+# Add a product to a category
+curl -s -X POST http://localhost:8080/api/v1/admin/categories/1/product \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{"productName": "iPhone 15", "quantity": 50, "price": 999.99, "discount": 10, "description": "Latest iPhone model"}'
+
+# Get all products
+curl -s http://localhost:8080/api/v1/public/products \
+  -b cookies.txt
+
+# Add product to cart (WIP endpoint)
+curl -s -X POST http://localhost:8080/api/v1/cart/products/1/quantity/2 \
+  -b cookies.txt
+
+# Sign out (clears cookie)
+curl -s -X POST http://localhost:8080/api/v1/auth/signout \
+  -b cookies.txt
+```
+
+#### Bearer-token auth (legacy, no longer used by current flow)
+
+```bash
+# Legacy sign in and capture JWT from response body (kept for reference only)
 TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/signin \
   -H "Content-Type: application/json" \
   -d '{"username":"user1","password":"password1"}' | jq -r '.jwt')
 
-# Get all categories with JWT
+# Legacy: get all categories with Authorization header
 curl "http://localhost:8080/api/v1/public/categories?pageNumber=0&pageSize=10&sortBy=categoryId&sortOrder=asc" \
   -H "Authorization: Bearer $TOKEN"
 
-# Create a category with JWT
+# Legacy: create a category with Authorization header
 curl -X POST http://localhost:8080/api/v1/public/categories \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{"categoryName": "Electronics"}'
 
-# Add a product to a category with JWT
+# Legacy: add a product to a category with Authorization header
 curl -X POST http://localhost:8080/api/v1/admin/categories/1/product \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{"productName": "iPhone 15", "quantity": 50, "price": 999.99, "discount": 10}'
 
-# Get all products with JWT
+# Legacy: get all products with Authorization header
 curl http://localhost:8080/api/v1/public/products \
   -H "Authorization: Bearer $TOKEN"
 
-# Get products by category with JWT (sorted by price)
+# Legacy: get products by category with Authorization header
 curl http://localhost:8080/api/v1/public/categories/1/products \
   -H "Authorization: Bearer $TOKEN"
 
-# Search products by keyword with JWT
+# Legacy: search products by keyword with Authorization header
 curl http://localhost:8080/api/v1/public/products/keyword/iphone \
   -H "Authorization: Bearer $TOKEN"
 
-# Update a product with JWT
+# Legacy: update a product with Authorization header
 curl -X PUT http://localhost:8080/api/v1/admin/products/1 \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{"productName": "iPhone 15 Pro", "description": "Latest iPhone Pro model", "quantity": 75, "price": 1199.99, "discount": 15}'
 
-# Delete a product with JWT
+# Legacy: delete a product with Authorization header
 curl -X DELETE http://localhost:8080/api/v1/admin/products/1 \
   -H "Authorization: Bearer $TOKEN"
 
-# Update a category with JWT
+# Legacy: update a category with Authorization header
 curl -X PUT http://localhost:8080/api/v1/public/categories/1 \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{"categoryName": "Updated Electronics"}'
 
-# Delete a category with JWT
+# Legacy: delete a category with Authorization header
 curl -X DELETE http://localhost:8080/api/v1/admin/categories/1 \
   -H "Authorization: Bearer $TOKEN"
 ```
-
-## 🏗️ Service Layer Architecture
-
-### Design Philosophy: Separation of Concerns
-
-The Category service layer demonstrates clean architecture principles with clear separation between business logic and HTTP protocol concerns.
-
-**Service Layer Responsibilities (CategoryService):**
-- Pure business logic - no awareness of HTTP
-- Data persistence operations via JpaRepository
-- Exception throwing for error scenarios (not returning status strings)
-- Methods return `void` or domain objects
-- Single Responsibility: Focus on WHAT to do, not HOW to communicate
-
-**Controller Responsibilities (CategoryController):**
-- HTTP request/response handling
-- Converting exceptions to appropriate HTTP status codes
-- Managing ResponseEntity with status codes
-- Single Responsibility: Focus on HTTP protocol details
-
-### Method Signatures
-
-**Service Layer (Business Logic)**
-```java
-public interface CategoryService {
-    List<Category> getAllCategories();
-    void createCategory(Category category);
-    void deleteCategory(Long id);  // Throws ResponseStatusException if not found
-    void updateCategory(Category category, Long categoryId);  // Throws ResponseStatusException if not found
-}
-```
-
-**Controller Layer (HTTP Response Handling)**
-```java
-@PostMapping("/public/categories")
-public ResponseEntity<String> createCategory(@RequestBody Category category) {
-    categoryService.createCategory(category);
-    return new ResponseEntity<>("Category created successfully", HttpStatus.CREATED);
-}
-
-@DeleteMapping("/admin/categories/{id}")
-public ResponseEntity<String> deleteCategory(@PathVariable Long id) {
-    try {
-        categoryService.deleteCategory(id);
-        return new ResponseEntity<>("Category with id: " + id + " deleted successfully", HttpStatus.OK);
-    } catch (ResponseStatusException e) {
-        return new ResponseEntity<>(e.getReason(), e.getStatusCode());
-    }
-}
-```
-
-### Benefits of This Approach
-
-✅ **Testability** - Service can be tested without mocking HttpStatus or ResponseEntity  
-✅ **Reusability** - Service layer can be used by controllers, scheduled tasks, or other clients  
-✅ **Clarity** - Clear what layer does what: service = logic, controller = HTTP  
-✅ **Exception Handling** - Exceptions bubble up naturally, caught at appropriate level  
-✅ **Spring Integration** - `ResponseStatusException` is Spring's standard for HTTP errors  
-✅ **Clean Code** - Service methods don't return status messages, controller does
-
-## 🛡️ Input Validation
-
-### Jakarta Bean Validation
-
-The application uses **Jakarta Bean Validation** (formerly JSR-303/JSR-380) for declarative input validation. This provides a standardized way to validate data before it reaches the business logic layer.
-
-### Category Model Validation
-
-The `Category` entity uses validation annotations to ensure data integrity:
-
-```java
-@Entity(name = "categories")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class Category {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long categoryId;
-
-    @NotBlank(message = "Category name is required")
-    private String categoryName;
-}
-```
-
-**Validation Constraints:**
-- `@NotBlank` - Ensures the category name is not null, empty, or whitespace
-- Custom error message: "Category name is required"
-
-### Controller Validation Trigger
-
-The controller uses `@Valid` annotation to trigger validation on incoming requests:
-
-```java
-@PostMapping("/public/categories")
-public ResponseEntity<String> createCategory(@Valid @RequestBody Category category) {
-    categoryService.createCategory(category);
-    return new ResponseEntity<>("Category created successfully", HttpStatus.CREATED);
-}
-```
-
-When validation fails:
-- Spring automatically returns **400 BAD REQUEST**
-- Response includes validation error details
-- Request never reaches the service layer
-
-### Benefits of Bean Validation
-
-✅ **Declarative** - Validation rules defined directly on model fields  
-✅ **Reusable** - Same validation applies everywhere the entity is used  
-✅ **Standard** - Based on Jakarta EE specification  
-✅ **Automatic** - Spring Boot auto-configures validation support  
-✅ **Clean** - No manual validation code in controllers or services  
-✅ **Consistent** - Uniform error response format across the API
-
-## 🔧 Lombok Integration
-
-### Code Generation with Annotations
-
-The project uses **Lombok** to reduce boilerplate code through compile-time code generation. Lombok provides annotations that automatically generate commonly used methods.
-
-### Category Model with Lombok
-
-```java
-@Entity(name = "categories")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class Category {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long categoryId;
-
-    @NotBlank(message = "Category name is required")
-    private String categoryName;
-}
-```
-
-**Lombok Annotations Used:**
-
-| Annotation | Generated Code |
-|------------|----------------|
-| `@Data` | Getters for all fields, setters for all non-final fields, `toString()`, `equals()`, `hashCode()` |
-| `@NoArgsConstructor` | Default constructor with no parameters |
-| `@AllArgsConstructor` | Constructor with parameters for all fields |
-
-### Before vs. After Lombok
-
-**Without Lombok (Manual):**
-```java
-public class Category {
-    private Long categoryId;
-    private String categoryName;
-    
-    // Default constructor
-    public Category() {}
-    
-    // All-args constructor
-    public Category(Long categoryId, String categoryName) {
-        this.categoryId = categoryId;
-        this.categoryName = categoryName;
-    }
-    
-    // Getters
-    public Long getCategoryId() { return categoryId; }
-    public String getCategoryName() { return categoryName; }
-    
-    // Setters
-    public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
-    public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
-    
-    // equals, hashCode, toString methods...
-    // (30+ more lines of boilerplate)
-}
-```
-
-**With Lombok (3 annotations):**
-```java
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class Category {
-    private Long categoryId;
-    private String categoryName;
-}
-```
-
-### Benefits of Lombok
-
-✅ **Less Boilerplate** - Reduces code size by 70-80%  
-✅ **Maintainability** - Adding/removing fields doesn't require updating methods  
-✅ **Readability** - Focus on business logic, not getters/setters  
-✅ **Consistency** - Generated methods follow best practices  
-✅ **Productivity** - Faster development with less typing  
-✅ **IDE Support** - Works with IntelliJ IDEA, Eclipse, VS Code
-
-### IDE Setup for Lombok
-
-**IntelliJ IDEA:**
-1. Install Lombok plugin (usually pre-installed)
-2. Enable annotation processing: Settings → Build → Compiler → Annotation Processors → Enable
-3. IntelliJ will recognize generated methods for autocomplete
-
-**Eclipse:**
-1. Run `java -jar lombok.jar` to install Lombok into Eclipse
-2. Restart Eclipse
-
-**VS Code:**
-1. Install "Lombok Annotations Support" extension
-2. Configure Java language server to enable annotation processing
-
-## 💻 Development
-
-### Development Mode
-
-The project includes Spring Boot DevTools, which provides:
-- **Automatic Restart**: Application automatically restarts when files change
-- **Live Reload**: Browser automatically refreshes when resources change
-- **Enhanced Development Experience**: Improved error messages and debugging
-
-### Configuration
-
-Edit `src/main/resources/application.properties` to configure:
-- Server port
-- Database connections
-- Logging levels
-- Custom application properties
-
-**Current Database Configuration:**
-
-```properties
-# Application name
-spring.application.name=sb-ecomm
-
-# H2 Database Configuration
-spring.h2.console.enabled=true
-spring.datasource.url=jdbc:h2:mem:testdb
-
-# JPA/Hibernate Configuration
-spring.jpa.show-sql=true
-spring.jpa.properties.hibernate.format_sql=true
-# Uncomment to auto-update schema: spring.jpa.hibernate.ddl-auto=update
-```
-
-### Database Access
-
-**H2 Database Console:**
-- **URL**: `http://localhost:8080/h2-console`
-- **JDBC URL**: `jdbc:h2:mem:testdb`
-- **Username**: `sa` (default)
-- **Password**: (leave empty)
-
-Use the H2 console to:
-- View database tables and data
-- Execute SQL queries
-- Inspect category data persisted in the database
-
-### Customizing Configuration
-
-You can modify other settings as needed:
-
-```properties
-# Server Configuration
-server.port=8080
-
-# Logging
-logging.level.com.echapps.ecom.project=DEBUG
-```
-
-### Adding Dependencies
-
-To add new dependencies, edit the `pom.xml` file and add the dependency in the `<dependencies>` section:
-
-```xml
-<dependency>
-    <groupId>group-id</groupId>
-    <artifactId>artifact-id</artifactId>
-</dependency>
-```
-
-Then run:
-```bash
-./mvnw clean install
-```
-
-## 🔍 Troubleshooting Common Issues
-
-### Infinite Recursion (StackOverflowError)
-
-**Problem:** When calling API endpoints that return Product or Category data, the application crashes with:
-```
-Exception in thread "http-nio-8080-exec-1" java.lang.StackOverflowError
-	at [No location information]
-```
-
-**Root Cause**: 
-The application has a bidirectional relationship between Product and Category entities. When Jackson (Spring's JSON serializer) tries to convert entities to JSON, it encounters a circular reference:
-- Product has a reference to Category
-- Category has a list of Products
-- Each Product in the list references Category again → infinite loop
-
-**Solution (Already Implemented):**
-The application uses Jackson's `@JsonManagedReference` and `@JsonBackReference` annotations to control serialization:
-
-1. **Category.java** - Marks products list as the "managed" side:
-   ```java
-   @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
-   @JsonManagedReference("category-products")
-   private List<Product> products;
-   ```
-
-2. **Product.java** - Marks category as the "back reference" (not serialized when coming from Category):
-   ```java
-   @ManyToOne
-   @JoinColumn(name = "category_id")
-   @JsonBackReference("category-products")
-   private Category category;
-   ```
-
-**Verification:**
-Test these endpoints to confirm the fix works:
-```bash
-# Should return products without circular references
-curl http://localhost:8080/api/v1/public/products
-
-# Should return categories with product lists
-curl http://localhost:8080/api/v1/public/categories
-```
-
-**If Issue Persists:**
-1. Verify both `@JsonManagedReference` and `@JsonBackReference` use the same reference name: `"category-products"`
-2. Rebuild and restart the application: `./mvnw clean install && ./mvnw spring-boot:run`
-3. Check that Product.java has `@JsonBackReference` and Category.java has `@JsonManagedReference`
-4. Clear the H2 database and restart fresh
-
-**Alternative Solutions (If Annotations Don't Work):**
-
-1. **Use `@JsonIdentityInfo`** - Serializes objects by ID instead of duplicating:
-   ```java
-   @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "productId")
-   public class Product { ... }
-   ```
-
-2. **Use DTOs** - Create separate DTOs that don't have circular references:
-   ```java
-   // ProductWithoutCategoryDTO - Product without category
-   // CategoryWithProductsDTO - Category with product summaries only
-   ```
-
-3. **Use `@Transient`** - Mark the field as non-persistent:
-   ```java
-   @Transient
-   @JsonIgnore
-   private Category category;
-   ```
-
-**Prevention Going Forward:**
-When creating new bidirectional relationships:
-- Always add `@JsonManagedReference` to the "managing" side (the side that should be fully serialized)
-- Always add `@JsonBackReference` to the "back" side (the reverse reference that should be hidden)
-- Use matching reference names on both annotations
-- Test serialization immediately after creating the relationship
-
-## 🧪 Testing
-
-Write unit tests in the `src/test/java` directory following the same package structure as your source code.
-
-```bash
-# Run all tests
-./mvnw test
-
-# Run tests with coverage
-./mvnw test jacoco:report
-```
-
-## 📚 Additional Resources
-
-- [Spring Boot Documentation](https://docs.spring.io/spring-boot/4.0.2/reference/)
-- [Spring Framework Reference](https://docs.spring.io/spring-framework/reference/)
-- [Building a RESTful Web Service](https://spring.io/guides/gs/rest-service/)
-- [Serving Web Content with Spring MVC](https://spring.io/guides/gs/serving-web-content/)
-- [Maven Documentation](https://maven.apache.org/guides/index.html)
-
-## 🤝 Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Coding Standards
-
-- Follow Java naming conventions
-- Write meaningful commit messages
-- Add unit tests for new features
-- Maintain code documentation
-- Keep methods small and focused
-
-## 📄 License
-
-This project is licensed under the [MIT License](LICENSE) - see the LICENSE file for details.
-
-## 👥 Authors
-
-- **echapps** - Initial work
-
-## 🐛 Issues
-
-If you encounter any issues or have questions, please file an issue on the project's issue tracker.
-
-## 📞 Support
-
-For support and questions:
-- Create an issue in the repository
-- Check existing documentation
-- Review Spring Boot guides and tutorials
-
----
-
-**Happy Coding! 🚀**
