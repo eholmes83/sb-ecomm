@@ -1,5 +1,6 @@
 package com.echapps.ecom.project.product.model;
 
+import com.echapps.ecom.project.cart.model.CartItem;
 import com.echapps.ecom.project.category.model.Category;
 import com.echapps.ecom.project.user.model.User;
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -10,6 +11,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Data
@@ -44,4 +48,7 @@ public class Product {
     @JoinColumn(name = "category_id")
     @JsonBackReference("category-products")
     private Category category;
+
+    @OneToMany(mappedBy = "product", cascade = { CascadeType.PERSIST, CascadeType.MERGE }, fetch = FetchType.EAGER)
+    private List<CartItem> products = new ArrayList<>();
 }

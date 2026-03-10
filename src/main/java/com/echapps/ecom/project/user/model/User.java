@@ -1,5 +1,6 @@
 package com.echapps.ecom.project.user.model;
 
+import com.echapps.ecom.project.cart.model.Cart;
 import com.echapps.ecom.project.product.model.Product;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -67,5 +68,10 @@ public class User {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "address_id"))
     private List<Address> addresses = new ArrayList<>();
+
+
+    @OneToOne(mappedBy = "user", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, orphanRemoval = true)
+    @ToString.Exclude
+    private Cart cart;
 
 }
