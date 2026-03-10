@@ -20,4 +20,9 @@ public class UserLoginResponse {
         this.roles = roles;
     }
 
+    public UserLoginResponse(Long id, String username, List<String> roles) {
+        this.id = id;
+        this.username = username;
+        this.roles = roles;
+    }
 }
