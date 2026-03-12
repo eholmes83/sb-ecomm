@@ -12,7 +12,9 @@ public class CartController {
 
     private CartService cartService;
 
-
+    public CartController(CartService cartService) {
+        this.cartService = cartService;
+    }
 
     @PostMapping("/products/{productId}/quantity/{quantity}")
     public ResponseEntity<CartDTO> addProductToCart(@PathVariable Long productId, @PathVariable Integer quantity) {
