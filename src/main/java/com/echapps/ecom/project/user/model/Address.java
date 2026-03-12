@@ -4,6 +4,7 @@ package com.echapps.ecom.project.user.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -46,6 +47,7 @@ public class Address {
 
     @ManyToMany(mappedBy = "addresses")
     @ToString.Exclude
+    @JsonIgnore
     private List<User> users = new ArrayList<>();
 
     public Address(String street, String city, String state, String country, String postalCode) {

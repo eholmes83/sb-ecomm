@@ -2,6 +2,7 @@ package com.echapps.ecom.project.cart.model;
 
 
 import com.echapps.ecom.project.product.model.Product;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -20,6 +21,7 @@ public class CartItem {
 
     @ManyToOne
     @JoinColumn(name = "cart_id")
+    @JsonBackReference("cart-cartItems")
     private Cart cart;
 
     @ManyToOne

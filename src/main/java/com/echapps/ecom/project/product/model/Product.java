@@ -4,6 +4,7 @@ import com.echapps.ecom.project.cart.model.CartItem;
 import com.echapps.ecom.project.category.model.Category;
 import com.echapps.ecom.project.user.model.User;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -42,6 +43,7 @@ public class Product {
 
     @ManyToOne
     @JoinColumn(name = "seller_id")
+    @JsonIgnore
     private User user;
 
     @ManyToOne
@@ -50,5 +52,6 @@ public class Product {
     private Category category;
 
     @OneToMany(mappedBy = "product", cascade = { CascadeType.PERSIST, CascadeType.MERGE }, fetch = FetchType.EAGER)
+    @JsonIgnore
     private List<CartItem> products = new ArrayList<>();
 }
