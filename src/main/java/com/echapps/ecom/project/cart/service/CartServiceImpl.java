@@ -5,6 +5,7 @@ import com.echapps.ecom.project.cart.model.Cart;
 import com.echapps.ecom.project.cart.model.CartItem;
 import com.echapps.ecom.project.cart.repository.CartItemRepository;
 import com.echapps.ecom.project.cart.repository.CartRepository;
+import com.echapps.ecom.project.utils.AuthUtil;
 import com.echapps.ecom.project.exceptions.APIException;
 import com.echapps.ecom.project.exceptions.ResourceNotFoundException;
 import com.echapps.ecom.project.product.dto.request.ProductRequest;
@@ -25,8 +26,9 @@ public class CartServiceImpl implements CartService {
     private final CartItemRepository cartItemRepository;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public CartServiceImpl(CartRepository cartRepository, ProductRepository productRepository, CartItemRepository cartItemRepository) {
+    public CartServiceImpl(CartRepository cartRepository, AuthUtil authUtil, ProductRepository productRepository, CartItemRepository cartItemRepository) {
         this.cartRepository = cartRepository;
+        this.authUtil = authUtil;
         this.productRepository = productRepository;
         this.cartItemRepository = cartItemRepository;
     }
@@ -69,6 +71,7 @@ public class CartServiceImpl implements CartService {
         product.setQuantity(product.getQuantity());
 
         cart.setTotalPrice(cart.getTotalPrice() + (product.getSpecialPrice() * quantity));
+        cart.getCartItems().add(newCartItem);
         cartRepository.save(cart);
 
         // 6. Return updated cart
@@ -88,7 +91,7 @@ public class CartServiceImpl implements CartService {
     }
 
     private Cart createCart() {
-        Cart userCart = cartRepository.findCartByEmail(authUtil.loggedInEmail());
+        Cart userCart = cartRepository.findCartByEmail(authUtil.getLoggedInUserEmail());
         if (userCart != null) {
             return userCart;
         }
