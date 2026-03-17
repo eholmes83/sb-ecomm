@@ -1,17 +1,14 @@
 package com.echapps.ecom.project.user.model;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "addresses")
@@ -45,10 +42,10 @@ public class Address {
     @Size(min = 5, message = "Postal code must be at least 5 characters long")
     private String postalCode;
 
-    @ManyToMany(mappedBy = "addresses")
-    @ToString.Exclude
+    @ManyToOne
+    @JoinColumn(name = "user_id")
     @JsonIgnore
-    private List<User> users = new ArrayList<>();
+    private User user;
 
     public Address(String street, String city, String state, String country, String postalCode) {
         this.street = street;
