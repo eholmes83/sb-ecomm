@@ -36,7 +36,26 @@ This is a **living document** that evolves as I progress through a comprehensive
 
 ### 🔄 Recent Changes
 
-**Latest Updates (March 10, 2026):**
+**Latest Updates (March 16, 2026):**
+- 🛒 **Cart Feature Expanded Beyond Initial Scaffold**
+  - Added cart retrieval endpoints:
+    - `GET /api/v1/cart/allUserCarts` - returns all carts
+    - `GET /api/v1/cart/users/cart` - returns logged-in user's cart
+  - Added cart quantity update endpoint:
+    - `PUT /api/v1/cart/products/{productId}/quantity/{operation}`
+    - Uses operation values like `add` (+1) or `delete` (-1)
+  - Added cart item deletion endpoint:
+    - `DELETE /api/v1/cart/{cartId}/products/{productId}`
+  - Expanded cart service logic to support:
+    - add/remove quantity changes
+    - remove item when quantity reaches zero
+    - cart total recalculation after updates/deletes
+- 🔧 **Repository and service support for richer cart workflows**
+  - Added cart lookup query methods in `CartRepository` (`findCartByEmail`, `findCartByEmailAndCartId`)
+  - Added delete query in `CartItemRepository` for product removal from a specific cart
+  - Added `AuthUtil`-driven user context usage in cart flow for user-specific operations
+
+**Previous Updates (March 10, 2026):**
 - 🍪 **JWT Cookie-Based Authentication Flow Update**
   - Updated `JwtUtils` to support cookie-based JWT handling:
     - Reads token from cookie via `getJwtFromCookie(HttpServletRequest request)`
@@ -860,7 +879,33 @@ Clears the JWT cookie and signs the user out.
 ```
 POST /api/v1/cart/products/{productId}/quantity/{quantity}
 ```
-Initial add-to-cart endpoint scaffold. Uses the authenticated user context and cart service flow under active development.
+Adds a product to the authenticated user's cart and creates a cart automatically if one does not already exist.
+
+**Get All User Carts**
+```
+GET /api/v1/cart/allUserCarts
+```
+Returns all carts currently stored in the system.
+
+**Get Logged-In User Cart**
+```
+GET /api/v1/cart/users/cart
+```
+Returns the active cart for the authenticated user.
+
+**Update Product Quantity in Cart**
+```
+PUT /api/v1/cart/products/{productId}/quantity/{operation}
+```
+Updates quantity by operation keyword:
+- `add` increases quantity by 1
+- `delete` decreases quantity by 1 (removes item when quantity becomes 0)
+
+**Delete Product from Cart**
+```
+DELETE /api/v1/cart/{cartId}/products/{productId}
+```
+Removes a specific product from the given cart.
 
 ### Category Management
 
@@ -1189,6 +1234,22 @@ curl -s http://localhost:8080/api/v1/public/products \
 
 # Add product to cart (WIP endpoint)
 curl -s -X POST http://localhost:8080/api/v1/cart/products/1/quantity/2 \
+  -b cookies.txt
+
+# Get logged-in user's cart
+curl -s http://localhost:8080/api/v1/cart/users/cart \
+  -b cookies.txt
+
+# Increase quantity of product 1 in cart by 1
+curl -s -X PUT http://localhost:8080/api/v1/cart/products/1/quantity/add \
+  -b cookies.txt
+
+# Decrease quantity of product 1 in cart by 1
+curl -s -X PUT http://localhost:8080/api/v1/cart/products/1/quantity/delete \
+  -b cookies.txt
+
+# Remove product 1 from cart 1
+curl -s -X DELETE http://localhost:8080/api/v1/cart/1/products/1 \
   -b cookies.txt
 
 # Sign out (clears cookie)
