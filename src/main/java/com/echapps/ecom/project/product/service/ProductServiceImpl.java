@@ -1,5 +1,9 @@
 package com.echapps.ecom.project.product.service;
 
+import com.echapps.ecom.project.cart.dto.request.CartDTO;
+import com.echapps.ecom.project.cart.model.Cart;
+import com.echapps.ecom.project.cart.repository.CartRepository;
+import com.echapps.ecom.project.cart.service.CartService;
 import com.echapps.ecom.project.category.model.Category;
 import com.echapps.ecom.project.category.repository.CategoryRepository;
 import com.echapps.ecom.project.exceptions.APIException;
@@ -27,15 +31,19 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
     private final FileService fileService;
     private final ObjectMapper objectMapper;
+    private final CartRepository cartRepository;
+    private final CartService cartService;
 
     @Value("${project.image}")
     private String path;
 
-    public ProductServiceImpl(CategoryRepository categoryRepository, ProductRepository productRepository, FileService fileService, ObjectMapper objectMapper) {
+    public ProductServiceImpl(CategoryRepository categoryRepository, ProductRepository productRepository, FileService fileService, ObjectMapper objectMapper, CartRepository cartRepository, CartService cartService) {
         this.categoryRepository = categoryRepository;
         this.productRepository = productRepository;
         this.fileService = fileService;
         this.objectMapper = objectMapper;
+        this.cartRepository = cartRepository;
+        this.cartService = cartService;
     }
 
     @Override
@@ -97,6 +105,10 @@ public class ProductServiceImpl implements ProductService {
         Product productToDelete = productRepository
                 .findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
+
+        List<Cart> carts = cartRepository.findCartsByProductId(productId);
+        carts.forEach(cart -> cartService.deleteProductFromCart(cart.getCartId(), productId));
+
         productRepository.deleteById(productId);
         return objectMapper.convertValue(productToDelete, ProductRequest.class);
     }
@@ -176,6 +188,19 @@ public class ProductServiceImpl implements ProductService {
         productToUpdate.setSpecialPrice(calculateSpecialPrice(product.getPrice(), product.getDiscount()));
 
         Product updatedProduct = productRepository.save(productToUpdate);
+
+        List<Cart> carts = cartRepository.findCartsByProductId(productId);
+
+        List<CartDTO> cartDTOS = carts.stream().map(cart -> {
+            CartDTO cartDTO = objectMapper.convertValue(cart, CartDTO.class);
+            List<ProductRequest> products = cart.getCartItems().stream()
+                    .map(p -> objectMapper.convertValue(p.getProduct(), ProductRequest.class)).toList();
+            cartDTO.setProducts(products);
+            return cartDTO;
+        }).toList();
+
+        cartDTOS.forEach(cart -> cartService.updateProductInCarts(cart.getCartId(), productId));
+
         return objectMapper.convertValue(updatedProduct, ProductRequest.class);
     }
 

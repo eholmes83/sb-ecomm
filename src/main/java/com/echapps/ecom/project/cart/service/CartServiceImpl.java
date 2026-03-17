@@ -208,6 +208,31 @@ public class CartServiceImpl implements CartService {
         return "Product " + cartItem.getProduct().getProductName() + " has been removed from the cart.";
     }
 
+    @Override
+    public void updateProductInCarts(Long cartId, Long productId) {
+        // validations
+            // 1. Check if the cart & product exists in cart
+        Cart cartToUpdate = cartRepository.findById(cartId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cart", "cartId", cartId));
+
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
+
+        CartItem cartItem = cartItemRepository.findCartItemByProductIdAndCartId(cartId, productId);
+
+        if (cartItem == null) {
+            throw new APIException("Product " + product.getProductName() + " is not in the cart.");
+        }
+
+        // 2. Update the product details in the cart item
+        double cartPrice = cartToUpdate.getTotalPrice() - (cartItem.getProductPrice() * cartItem.getQuantity());
+        cartItem.setProductPrice(product.getSpecialPrice());
+
+        cartToUpdate.setTotalPrice(cartPrice + (cartItem.getProductPrice() * cartItem.getQuantity()));
+        cartItemRepository.save(cartItem);
+
+    }
+
     private Cart createCart() {
         Cart userCart = cartRepository.findCartByEmail(authUtil.getLoggedInUserEmail());
         if (userCart != null) {
