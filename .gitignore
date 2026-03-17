@@ -37,3 +37,8 @@ markdowns/
 
 ### Images ###
 images/
+
+### Environment files ###
+.env
+.env.*
+!.env.example
