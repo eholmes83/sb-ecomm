@@ -36,7 +36,52 @@ This is a **living document** that evolves as I progress through a comprehensive
 
 ### 🔄 Recent Changes
 
-**Latest Updates (March 16, 2026):**
+**Latest Updates (March 18, 2026):**
+- 👥 **Address Management Feature - Complete CRUD Operations**
+  - Implemented comprehensive address management for logged-in users
+  - Added `AddressController` with six REST endpoints under `/api/v1/addresses`:
+    - `POST /api/v1/addresses` - Create a new address for current user
+    - `GET /api/v1/addresses` - Get all addresses in system
+    - `GET /api/v1/addresses/{addressId}` - Get specific address by ID
+    - `GET /api/v1/addresses/user/addresses` - Get all addresses for current logged-in user
+    - `PUT /api/v1/addresses/{addressId}` - Update address details
+    - `DELETE /api/v1/addresses/{addressId}` - Delete address and remove from user
+  - Added `AddressDTO` (request/response DTO) with fields: `addressId`, `street`, `city`, `state`, `country`, `postalCode`
+  - Implemented `AddressService` interface and `AddressServiceImpl` with full CRUD logic:
+    - `createAddress()` - Associates new address with current user, validates via `@Valid` annotation
+    - `getAddresses()` - Returns all addresses from database
+    - `getAddressById()` - Fetches specific address, throws `ResourceNotFoundException` if not found
+    - `getUserAddresses()` - Retrieves all addresses associated with current authenticated user
+    - `updateAddressById()` - Updates address fields and maintains user-address relationship
+    - `deleteAddressById()` - Removes address and cleans up user address list
+  - Enhanced `Address` model relationships:
+    - `@ManyToOne` relationship with `User` for address ownership
+    - Proper cascade and fetch strategies configured
+  - Updated `User` model:
+    - `@OneToMany` relationship to `Address` with proper cascade handling
+    - Supports multi-address management per user (for billing, shipping, etc.)
+  - Leveraged `AuthUtil` for user context:
+    - `authUtil.getLoggedInUser()` retrieves currently authenticated user
+    - Ensures all address operations are user-scoped
+  - Used `ObjectMapper` for automatic DTO/Entity conversions
+  - Input validation on all address fields:
+    - `@NotBlank` for required fields
+    - `@Size` constraints with custom error messages
+  - Files created/modified:
+    - New: `AddressController.java`, `AddressService.java`, `AddressServiceImpl.java`
+    - New: `AddressDTO.java`
+    - New: `AddressRepository.java`
+    - Modified: `Address.java` (enhanced relationships)
+    - Modified: `User.java` (added OneToMany relationship to Address)
+  - Benefits:
+    - ✅ Full address lifecycle management (Create, Read, Update, Delete)
+    - ✅ Multi-address support for users (billing, shipping, home, work, etc.)
+    - ✅ User-scoped address retrieval ensures data privacy
+    - ✅ Input validation prevents data quality issues
+    - ✅ Foundation for order/checkout flow to use saved addresses
+    - ✅ Complete RESTful API for address operations
+
+**Previous Updates (March 16, 2026):**
 - 🛒 **Cart Feature Expanded Beyond Initial Scaffold**
   - Added cart retrieval endpoints:
     - `GET /api/v1/cart/allUserCarts` - returns all carts
@@ -907,6 +952,181 @@ DELETE /api/v1/cart/{cartId}/products/{productId}
 ```
 Removes a specific product from the given cart.
 
+### Address Management
+
+**Create Address for Current User**
+```
+POST /api/v1/addresses
+Content-Type: application/json
+
+{
+  "street": "123 Main Street",
+  "city": "New York",
+  "state": "NY",
+  "country": "USA",
+  "postalCode": "10001"
+}
+```
+Creates a new address for the currently authenticated user. Address ID is auto-generated.
+
+**Validation Rules:**
+- `street` is required, minimum 5 characters
+- `city` is required, minimum 2 characters
+- `state` is required, minimum 2 characters
+- `country` is required, minimum 2 characters
+- `postalCode` is required, minimum 5 characters
+- Uses `@Valid` annotation for input validation
+
+**Response:** `201 CREATED`
+```json
+{
+  "addressId": 1,
+  "street": "123 Main Street",
+  "city": "New York",
+  "state": "NY",
+  "country": "USA",
+  "postalCode": "10001"
+}
+```
+
+**Response (Validation Error):** `400 BAD REQUEST`
+```json
+{
+  "timestamp": "2026-03-18T12:30:00.000+00:00",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Street must be at least 5 characters",
+  "path": "/api/v1/addresses"
+}
+```
+
+**Get All Addresses in System**
+```
+GET /api/v1/addresses
+```
+Returns all addresses from the database (admin/system view).
+
+**Response:** `200 OK`
+```json
+[
+  {
+    "addressId": 1,
+    "street": "123 Main Street",
+    "city": "New York",
+    "state": "NY",
+    "country": "USA",
+    "postalCode": "10001"
+  },
+  {
+    "addressId": 2,
+    "street": "456 Oak Avenue",
+    "city": "Los Angeles",
+    "state": "CA",
+    "country": "USA",
+    "postalCode": "90001"
+  }
+]
+```
+
+**Get Address by ID**
+```
+GET /api/v1/addresses/{addressId}
+```
+Retrieves a specific address by its ID.
+
+**Response:** `302 FOUND`
+```json
+{
+  "addressId": 1,
+  "street": "123 Main Street",
+  "city": "New York",
+  "state": "NY",
+  "country": "USA",
+  "postalCode": "10001"
+}
+```
+
+**Response (Not Found):** `404 NOT FOUND`
+```json
+{
+  "message": "Address not found with addressId: 1",
+  "isSuccess": false
+}
+```
+
+**Get All Addresses for Current User**
+```
+GET /api/v1/addresses/user/addresses
+```
+Returns all addresses associated with the currently authenticated user.
+
+**Response:** `200 OK`
+```json
+[
+  {
+    "addressId": 1,
+    "street": "123 Main Street",
+    "city": "New York",
+    "state": "NY",
+    "country": "USA",
+    "postalCode": "10001"
+  }
+]
+```
+
+**Update Address**
+```
+PUT /api/v1/addresses/{addressId}
+Content-Type: application/json
+
+{
+  "street": "456 Oak Avenue",
+  "city": "Los Angeles",
+  "state": "CA",
+  "country": "USA",
+  "postalCode": "90001"
+}
+```
+Updates an existing address by ID and maintains user-address relationship.
+
+**Response:** `200 OK`
+```json
+{
+  "addressId": 1,
+  "street": "456 Oak Avenue",
+  "city": "Los Angeles",
+  "state": "CA",
+  "country": "USA",
+  "postalCode": "90001"
+}
+```
+
+**Delete Address**
+```
+DELETE /api/v1/addresses/{addressId}
+```
+Deletes an address by ID and removes it from the user's address list.
+
+**Response:** `200 OK`
+```json
+{
+  "addressId": 1,
+  "street": "123 Main Street",
+  "city": "New York",
+  "state": "NY",
+  "country": "USA",
+  "postalCode": "10001"
+}
+```
+
+**Response (Not Found):** `404 NOT FOUND`
+```json
+{
+  "message": "Address not found with addressId: 1",
+  "isSuccess": false
+}
+```
+
 ### Category Management
 
 **Get All Categories**
@@ -1250,6 +1470,34 @@ curl -s -X PUT http://localhost:8080/api/v1/cart/products/1/quantity/delete \
 
 # Remove product 1 from cart 1
 curl -s -X DELETE http://localhost:8080/api/v1/cart/1/products/1 \
+  -b cookies.txt
+
+# Create an address for current user
+curl -s -X POST http://localhost:8080/api/v1/addresses \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{"street": "123 Main Street", "city": "New York", "state": "NY", "country": "USA", "postalCode": "10001"}'
+
+# Get all addresses in system
+curl -s http://localhost:8080/api/v1/addresses \
+  -b cookies.txt
+
+# Get current user's addresses
+curl -s http://localhost:8080/api/v1/addresses/user/addresses \
+  -b cookies.txt
+
+# Get specific address by ID
+curl -s http://localhost:8080/api/v1/addresses/1 \
+  -b cookies.txt
+
+# Update address
+curl -s -X PUT http://localhost:8080/api/v1/addresses/1 \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{"street": "456 Oak Avenue", "city": "Los Angeles", "state": "CA", "country": "USA", "postalCode": "90001"}'
+
+# Delete address
+curl -s -X DELETE http://localhost:8080/api/v1/addresses/1 \
   -b cookies.txt
 
 # Sign out (clears cookie)
