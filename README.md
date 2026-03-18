@@ -38,6 +38,17 @@ This is a **living document** that evolves as I progress through a comprehensive
 ### 🔄 Recent Changes
 
 **Latest Updates (March 18, 2026):**
+- 🔍 **Infinite Recursion Scan - Additional Risk Identified**
+  - Project-wide scan confirmed the previous Product/Category recursion fix is still valid
+  - Found an additional potential recursion path in order placement mapping:
+    - `Order -> Payment -> Order`
+    - `Order -> OrderItem -> Order`
+  - Risk is highest in `OrderServiceImpl.placeOrder()` when converting `Order` entity with `ObjectMapper.convertValue(...)`
+  - Recommended fix is documented in `markdowns/INFINITE_RECURSION_FIX.md`:
+    - Add Jackson guards (`@JsonManagedReference`/`@JsonBackReference`) or
+    - Ignore back-link fields (`@JsonIgnore`) where API responses do not need them
+  - Added explicit verification step for `POST /api/v1/order/users/payments/{paymentMethod}` to confirm no `StackOverflowError`
+
 - 👥 **Address Management Feature - Complete CRUD Operations**
   - Implemented comprehensive address management for logged-in users
   - Added `AddressController` with six REST endpoints under `/api/v1/addresses`:
@@ -273,7 +284,7 @@ This is a **living document** that evolves as I progress through a comprehensive
     - ✅ Added `@JsonManagedReference("category-products")` to Category entity's products list - marks this side as the "managing" side of the relationship for serialization
     - ✅ Added `@JsonIgnore` to ProductRequest DTO's category field - provides additional protection at the DTO layer
   - **How It Works**: Jackson now knows to serialize the products list from Category, but when serializing each Product in that list, skip its category reference (breaks the circular chain)
-  - **Impact**: All API endpoints that return Product or Category data now serialize correctly without StackOverflowError
+  - **Impact**: Product and Category endpoints now serialize correctly without StackOverflowError
   - Files affected: Product.java, Category.java, ProductRequest.java
   - Benefits: Eliminates application crashes, maintains data integrity on both sides of the relationship, follows Jackson best practices for bidirectional relationships
   - **Affected Endpoints Fixed**:
