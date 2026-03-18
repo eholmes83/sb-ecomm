@@ -1,6 +1,7 @@
 package com.echapps.ecom.project.payment.model;
 
 import com.echapps.ecom.project.order.model.Order;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -20,6 +21,7 @@ public class Payment {
     private Long paymentId;
 
     @OneToOne(mappedBy = "payment", cascade = { CascadeType.PERSIST, CascadeType.MERGE }, orphanRemoval = true)
+    @JsonBackReference("order-payment")
     private Order order;
 
     @NotBlank
@@ -32,9 +34,9 @@ public class Payment {
     private String pgStatus;
     private String pgResponseMessage;
 
-    public Payment(String pgName, Long paymentId, String pgPaymentId, String pgStatus, String pgResponseMessage) {
+    public Payment(String paymentMethod, String pgName, String pgPaymentId, String pgStatus, String pgResponseMessage) {
+        this.paymentMethod = paymentMethod;
         this.pgName = pgName;
-        this.paymentId = paymentId;
         this.pgPaymentId = pgPaymentId;
         this.pgStatus = pgStatus;
         this.pgResponseMessage = pgResponseMessage;

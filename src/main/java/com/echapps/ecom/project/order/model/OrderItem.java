@@ -2,6 +2,7 @@ package com.echapps.ecom.project.order.model;
 
 
 import com.echapps.ecom.project.product.model.Product;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -24,6 +25,7 @@ public class OrderItem {
 
     @ManyToOne
     @JoinColumn(name = "order_id")
+    @JsonBackReference("order-items")
     private Order order;
 
     private Integer quantity;

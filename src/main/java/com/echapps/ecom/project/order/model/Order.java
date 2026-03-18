@@ -2,6 +2,7 @@ package com.echapps.ecom.project.order.model;
 
 import com.echapps.ecom.project.payment.model.Payment;
 import com.echapps.ecom.project.user.model.Address;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import lombok.AllArgsConstructor;
@@ -28,12 +29,14 @@ public class Order {
     private String email;
 
     @OneToMany(mappedBy = "order", cascade = { CascadeType.PERSIST, CascadeType.MERGE }, orphanRemoval = true)
+    @JsonManagedReference("order-items")
     private List<OrderItem> orderItems = new ArrayList<>();
 
     private LocalDate orderDate;
 
     @OneToOne
     @JoinColumn(name = "payment_id")
+    @JsonManagedReference("order-payment")
     private Payment payment;
 
     private Double totalAmount;
