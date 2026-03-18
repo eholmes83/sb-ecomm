@@ -80,9 +80,9 @@ public class CartServiceImpl implements CartService {
 
         List<CartItem> cartItems = cart.getCartItems();
 
-        Stream<ProductRequest> productRequestStream = cartItems.stream().map(item -> {
-            ProductRequest request = mapper.convertValue(item.getProduct(), ProductRequest.class);
-            request.setQuantity(item.getQuantity());
+        Stream<ProductRequest> productRequestStream = cartItems.stream().map(ci -> {
+            ProductRequest request = mapper.convertValue(ci.getProduct(), ProductRequest.class);
+            request.setQuantity(ci.getQuantity());
             return request;
         });
 
@@ -102,9 +102,13 @@ public class CartServiceImpl implements CartService {
         return carts.stream()
                 .map(cart -> {
                     CartDTO cartDTO = mapper.convertValue(cart, CartDTO.class);
-                    List<ProductRequest> products = cart.getCartItems().stream()
-                            .map(product -> mapper.convertValue(product.getProduct(), ProductRequest.class))
-                            .toList();
+
+                    List<ProductRequest> products = cart.getCartItems().stream().map(cartItem -> {
+                        ProductRequest productRequest = mapper.convertValue(cartItem.getProduct(), ProductRequest.class);
+                        productRequest.setQuantity(cartItem.getQuantity());
+                        return productRequest;
+                    }).toList();
+
                     cartDTO.setProducts(products);
                     return cartDTO;
                 }).toList();
