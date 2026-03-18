@@ -12,6 +12,7 @@ A full-stack e-commerce application built with Spring Boot, designed to provide 
 - [Getting Started](#getting-started)
 - [Building the Application](#building-the-application)
 - [Running the Application](#running-the-application)
+- [Database Schema Management](#-database-schema-management)
 - [API Endpoints](#api-endpoints)
 - [Service Layer Architecture](#service-layer-architecture)
 - [Input Validation](#input-validation)
@@ -384,7 +385,7 @@ This is a **living document** that evolves as I progress through a comprehensive
 - 📝 **Postman Collection Updated with Pagination & Sorting**
   - Updated Postman collection to include pagination and sorting example requests
   - Collection now demonstrates: `GET /api/v1/public/categories?pageNumber=0&pageSize=10&sortBy=categoryId&sortOrder=desc`
-  - Test data added to H2 database for pagination testing
+  - Test data created in PostgreSQL database (replaces H2 in-memory testing)
 
 **Previous Updates (February 16, 2026):**
 - 🔄 **DTO Pattern Implementation & Controller/Service Refactoring**
@@ -439,11 +440,12 @@ This is a **living document** that evolves as I progress through a comprehensive
     - `@Id` and `@GeneratedValue(strategy = GenerationType.IDENTITY)` - Auto-incrementing primary key
   - Refactored **CategoryServiceImpl** to use repository instead of in-memory ArrayList
   - All CRUD operations now use JPA for database persistence
-  - Added **H2 Database** as in-memory database for testing/development
+  - Added **PostgreSQL Database** as primary relational database (H2 and MySQL available as alternatives)
   - Added **Spring Data JPA** dependency for ORM support
-  - Configured **application.properties** with H2 connection and JPA settings:
-    - H2 console enabled for database inspection (`http://localhost:8080/h2-console`)
+  - Configured **application.properties** with PostgreSQL connection and JPA settings:
+    - PostgreSQL connection: `jdbc:postgresql://localhost:5432/sb-ecomm`
     - SQL logging enabled for debugging
+    - Hibernate DDL auto: `update` (creates/updates tables on startup)
   - Maintained all existing REST endpoints - no API changes, internal implementation refactored
   - Service layer maintains exception handling with `ResponseStatusException` for 404 scenarios
 
@@ -494,18 +496,49 @@ This is a **living document** that evolves as I progress through a comprehensive
   - ✅ User login endpoint (`POST /api/v1/auth/signin`)
   - 🚧 User profile management endpoints (planned)
 
-- 📍 **Address Management** - Complete user address support
-  - ✅ Multiple addresses per user via Many-to-Many relationship
-  - ✅ Address fields: street, city, state, country, postal code
-  - ✅ Input validation on all address fields with minimum length constraints
-  - ✅ Custom error messages for validation failures
+- 📍 **Address Management** - Complete user address support with full CRUD operations
+  - ✅ Multiple addresses per user via One-to-Many relationship (user-scoped address management)
+  - ✅ Address fields: street (min 5 chars), city (min 2 chars), state (min 2 chars), country (min 2 chars), postal code (min 5 chars)
+  - ✅ Input validation on all address fields with custom error messages
+  - ✅ Six REST endpoints under `/api/v1/addresses`:
+    - `POST /api/v1/addresses` - Create new address for current user
+    - `GET /api/v1/addresses` - Get all addresses (system view)
+    - `GET /api/v1/addresses/{addressId}` - Get specific address by ID
+    - `GET /api/v1/addresses/user/addresses` - Get all addresses for logged-in user
+    - `PUT /api/v1/addresses/{addressId}` - Update address details
+    - `DELETE /api/v1/addresses/{addressId}` - Delete address
+  - ✅ AddressService with complete CRUD logic and user-context awareness
+  - ✅ AddressDTO for API request/response serialization
+  - ✅ AddressRepository for JPA data access
+  - ✅ User-scoped address retrieval ensures data privacy
+  - ✅ Proper error handling with ResourceNotFoundException for missing addresses
+  - ✅ ObjectMapper for automatic DTO/Entity conversions
+  - ✅ User-address relationship cleanup on delete operations
+
+- 🛒 **Shopping Cart** - Partial CRUD operations for cart management (In Progress)
+  - ✅ Five REST endpoints under `/api/v1/cart`:
+    - `POST /api/v1/cart/products/{productId}/quantity/{quantity}` - Add product to cart (auto-creates cart)
+    - `GET /api/v1/cart/allUserCarts` - Get all carts in system
+    - `GET /api/v1/cart/users/cart` - Get authenticated user's cart
+    - `PUT /api/v1/cart/products/{productId}/quantity/{operation}` - Update item quantity (add/delete)
+    - `DELETE /api/v1/cart/{cartId}/products/{productId}` - Remove product from cart
+  - ✅ CartService with add-to-cart, retrieval, quantity update, and deletion logic
+  - ✅ CartDTO and CartItemDTO for API serialization
+  - ✅ CartRepository with custom queries (findCartByEmail, findCartByEmailAndCartId)
+  - ✅ CartItemRepository with custom delete operations
+  - ✅ Automatic cart creation on first product add
+  - ✅ Automatic cart total recalculation after updates/deletes
+  - ✅ Remove cart items when quantity reaches zero
+  - ✅ User-context awareness for cart retrieval
+  - ⏳ Checkout/Order placement workflow (planned)
+  - ⏳ Cart persistence and recovery (planned)
 
 - 🏷️ **Category Management** - Complete CRUD operations with database persistence and clean architecture
   - ✅ CREATE - Add new categories (auto-generated IDs via database)
   - ✅ READ - Retrieve all categories with pagination and sorting support
   - ✅ UPDATE - Modify existing category information
   - ✅ DELETE - Remove categories with proper error handling
-  - ✅ **Database Persistence** - H2 in-memory database with JPA/Hibernate ORM
+  - ✅ **Database Persistence** - PostgreSQL with JPA/Hibernate ORM (supports H2 and MySQL as alternatives)
   - ✅ **Input Validation** - Jakarta Bean Validation with `@NotBlank` and `@Size` constraints on category name
   - ✅ **Lombok Integration** - Reduced boilerplate with auto-generated getters, setters, and constructors
   - ✅ **Separation of Concerns** - Service layer focuses on business logic, Controller handles HTTP responses
@@ -541,8 +574,7 @@ This is a **living document** that evolves as I progress through a comprehensive
 
 **🚧 In Development:**
 - 👥 User Profile Management (view/update user information)
-- 📍 Address Management Endpoints (add/update/delete user addresses)
-- 🛒 Shopping cart functionality
+- 🛒 Shopping cart functionality (partially implemented - add to cart, retrieve, update quantity, delete items)
 - 📦 Order management system
 - 💳 Payment processing integration
 - 📊 Admin dashboard
@@ -558,7 +590,7 @@ This is a **living document** that evolves as I progress through a comprehensive
 - **Framework**: Spring MVC
 - **Security**: Spring Security with JWT Token Authentication
 - **ORM**: Spring Data JPA / Hibernate
-- **Database**: H2 (In-Memory for Development)
+- **Database**: PostgreSQL 12+ (Primary) - H2 & MySQL available as alternatives
 - **JSON Processing**: Jackson (Serialization/Deserialization)
 - **Validation**: Jakarta Bean Validation (Spring Boot Starter Validation)
 - **Development Tools**: 
@@ -572,8 +604,10 @@ This is a **living document** that evolves as I progress through a comprehensive
 - `spring-boot-starter-validation` - Jakarta Bean Validation for input validation
 - `spring-boot-starter-security` - Spring Security framework for authentication and authorization
 - `jjwt` - JSON Web Token (JWT) library for token generation and validation
-- `h2` - In-memory relational database for development/testing
-- `spring-boot-h2console` - H2 database browser console
+- `postgresql` - PostgreSQL JDBC driver for database connectivity (primary database)
+- `h2` - In-memory relational database (development/testing alternative)
+- `spring-boot-h2console` - H2 database browser console (when using H2)
+- `mysql-connector-j` - MySQL JDBC driver (development/testing alternative)
 - `spring-boot-devtools` - Development tools for automatic restart and live reload
 - `lombok` (v1.18.42) - Annotation-based code generation (getters, setters, constructors, etc.)
 - `spring-boot-starter-webmvc-test` - Testing support for Spring MVC applications
@@ -590,12 +624,79 @@ Before you begin, ensure you have the following installed on your system:
 - **Maven 3.6+** (Optional - the project includes Maven Wrapper)
   - Verify installation: `mvn -version`
 
+- **PostgreSQL 12+** (Primary Database)
+  - [Download PostgreSQL](https://www.postgresql.org/download/)
+  - **Setup Instructions**:
+    - Install PostgreSQL server
+    - Create a database named `sb-ecomm`:
+      ```sql
+      CREATE DATABASE "sb-ecomm";
+      ```
+    - Default connection details (configured in `application.properties`):
+      - Host: `localhost`
+      - Port: `5432`
+      - Database: `sb-ecomm`
+      - Username: `postgres`
+      - Password: `myPGP@ss123!` (change for production)
+    - Verify connection: `psql -U postgres -d sb-ecomm`
+
 - **IDE** (Recommended)
   - IntelliJ IDEA
   - Eclipse
   - VS Code with Java extensions
 
+### Database Configuration
+
+The application is configured to use **PostgreSQL** by default. Alternative database configurations are available:
+
+**Current Configuration: PostgreSQL** ✅
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/sb-ecomm
+spring.datasource.username=postgres
+spring.datasource.password=myPGP@ss123!
+spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.hibernate.ddl-auto=update
+```
+
+**Alternative: H2 In-Memory Database** (for testing/development)
+```properties
+spring.h2.console.enabled=true
+spring.datasource.url=jdbc:h2:mem:testdb
+```
+
+**Alternative: MySQL Database** (for development)
+```properties
+spring.datasource.url=jdbc:mysql://localhost:3306/sb-ecomm
+spring.datasource.username=root
+spring.datasource.password=your_password
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
+```
+
+To switch databases, uncomment the desired configuration in `src/main/resources/application.properties` and comment out PostgreSQL settings.
+
 ## 🏁 Getting Started
+
+### Prerequisites Checklist
+
+Before starting, ensure:
+- ✅ JDK 21+ is installed and `JAVA_HOME` is set
+- ✅ Maven is available (or use Maven Wrapper: `./mvnw`)
+- ✅ PostgreSQL is installed and running on `localhost:5432`
+- ✅ Database `sb-ecomm` is created and accessible
+
+### Create the Database
+
+If you haven't created the PostgreSQL database yet, run:
+
+```bash
+psql -U postgres -c "CREATE DATABASE \"sb-ecomm\";"
+```
+
+Or use pgAdmin GUI:
+1. Open pgAdmin
+2. Right-click on Databases → Create → Database
+3. Name: `sb-ecomm`
+4. Click Create
 
 ### Clone the Repository
 
@@ -610,15 +711,33 @@ The project includes Maven Wrapper, so you don't need to have Maven installed se
 
 **On macOS/Linux:**
 ```bash
+# Option 1: Direct build and run
 ./mvnw spring-boot:run
+
+# Option 2: Build first, then run JAR
+./mvnw clean package
+java -jar target/sb-ecomm-0.0.1-SNAPSHOT.jar
 ```
 
 **On Windows:**
 ```bash
+# Option 1: Direct build and run
 mvnw.cmd spring-boot:run
+
+# Option 2: Build first, then run JAR
+mvnw.cmd clean package
+java -jar target/sb-ecomm-0.0.1-SNAPSHOT.jar
 ```
 
 The application will start on `http://localhost:8080`
+
+**Verify Application is Running:**
+```bash
+# Should return a JSON response
+curl http://localhost:8080/api/v1/auth/current-user
+```
+
+If you get an error about missing authentication, sign in first (see API Endpoints section)
 
 ## 📁 Project Structure
 
@@ -707,15 +826,15 @@ com.echapps.ecom.project/
 │   ├── mapper/                   # 🚧 DTO/Entity mappers (planned)
 │   └── config/                   # 🚧 Feature configuration (planned)
 │
-├── cart/                         # Cart Feature Slice
-│   ├── controller/               # 🚧 Endpoint scaffolding in progress
-│   │   └── CartController.java
-│   ├── service/                  # 🚧 Business logic in progress
+├── cart/                         # Cart Feature Slice (⚙️ Partially Implemented)
+│   ├── controller/               # ⚙️ Partial implementation
+│   │   └── CartController.java (5 endpoints: add, get all, get user cart, update qty, delete item)
+│   ├── service/                  # ⚙️ Partial implementation
 │   │   ├── CartService.java
-│   │   └── CartServiceImpl.java
+│   │   └── CartServiceImpl.java (add to cart, retrieve, update quantity, delete items)
 │   ├── repository/               # ✅ Data access layer (JPA/Database)
-│   │   ├── CartRepository.java
-│   │   └── CartItemRepository.java
+│   │   ├── CartRepository.java (findCartByEmail, findCartByEmailAndCartId)
+│   │   └── CartItemRepository.java (custom delete methods)
 │   ├── model/                    # ✅ Domain entities
 │   │   ├── Cart.java
 │   │   └── CartItem.java
@@ -725,16 +844,26 @@ com.echapps.ecom.project/
 │           └── CartItemDTO.java
 │
 ├── user/                         # User Management Feature Slice
+│   ├── address/                  # ✅ Address Management Feature (Complete CRUD)
+│   │   ├── controller/
+│   │   │   └── AddressController.java (6 REST endpoints)
+│   │   ├── service/
+│   │   │   ├── AddressService.java (interface)
+│   │   │   └── AddressServiceImpl.java (implementation)
+│   │   └── dto/
+│   │       └── request/
+│   │           └── AddressDTO.java
 │   ├── controller/               # 🚧 REST endpoints for profile/account management (planned)
 │   ├── service/                  # 🚧 Business logic layer (planned)
 │   ├── repository/               # ✅ Data access layer (JPA/Database)
 │   │   ├── UserRepository.java (findByUserName, existsByUserName, existsByEmail)
+│   │   ├── AddressRepository.java (JpaRepository)
 │   │   └── RoleRepository.java (findByRoleName)
 │   ├── model/                    # ✅ Domain entities (JPA Entities)
-│   │   ├── User.java
+│   │   ├── User.java (with OneToMany relationship to Address)
 │   │   ├── Role.java
 │   │   ├── AppRole.java
-│   │   └── Address.java
+│   │   └── Address.java (with ManyToOne relationship to User)
 │   ├── dto/                      # 🚧 Data transfer objects (planned)
 │   ├── exception/                # 🚧 Feature-specific exceptions (planned)
 │   ├── validator/                # 🚧 Custom validation logic (planned)
@@ -787,6 +916,10 @@ com.echapps.ecom.project/
 
 ## 🔨 Building the Application
 
+### Prerequisites
+- Ensure PostgreSQL is running and the `sb-ecomm` database exists
+- Verify database credentials in `application.properties` match your PostgreSQL setup
+
 ### Build the Project
 
 ```bash
@@ -797,6 +930,7 @@ This will:
 - Compile the source code
 - Run unit tests
 - Package the application as a JAR file in the `target/` directory
+- Tables will be created automatically on first run (via Hibernate DDL: `ddl-auto=update`)
 
 ### Run Tests
 
@@ -814,7 +948,12 @@ The executable JAR will be created at `target/sb-ecomm-0.0.1-SNAPSHOT.jar`
 
 ## ▶️ Running the Application
 
-### Option 1: Using Maven
+### Prerequisites for Running
+- ✅ PostgreSQL is running on `localhost:5432`
+- ✅ Database `sb-ecomm` exists and is accessible
+- ✅ Database credentials in `application.properties` are correct
+
+### Option 1: Using Maven (Recommended for Development)
 
 ```bash
 ./mvnw spring-boot:run
@@ -822,19 +961,139 @@ The executable JAR will be created at `target/sb-ecomm-0.0.1-SNAPSHOT.jar`
 
 ### Option 2: Using the JAR File
 
+First, build the application:
+```bash
+./mvnw clean package
+```
+
+Then run the JAR:
 ```bash
 java -jar target/sb-ecomm-0.0.1-SNAPSHOT.jar
 ```
 
 ### Option 3: From IDE
 
-Run the `SbEcommApplication.java` class directly from your IDE.
+1. Open `SbEcommApplication.java` in your IDE
+2. Right-click and select "Run" or "Debug"
+3. IDE will start the application with hot-reload enabled (via Spring DevTools)
 
 ### Accessing the Application
 
 Once started, the application will be available at:
 - **Base URL**: `http://localhost:8080`
 - **Health Check**: `http://localhost:8080/actuator/health` (if actuator is added)
+
+### Verify PostgreSQL Connection
+
+Check logs for successful database connection:
+```
+Hibernate: select version()
+<SELECT 12 (PostgreSQL version)>
+HikariPool-1 - Start completed
+```
+
+### Troubleshooting Connection Issues
+
+**Connection Refused (port 5432)**
+```bash
+# Check if PostgreSQL is running
+psql -U postgres -c "SELECT version();"
+
+# If not running, start PostgreSQL (macOS with Homebrew)
+brew services start postgresql
+```
+
+**Authentication Failed**
+- Verify username/password in `application.properties`
+- Reset PostgreSQL password if needed
+
+**Database Does Not Exist**
+```bash
+# Create the database
+psql -U postgres -c "CREATE DATABASE \"sb-ecomm\";"
+```
+
+**Connection Timeout**
+- Verify PostgreSQL is listening on `localhost:5432`
+- Check firewall rules
+- Confirm no other process is using port 5432
+
+## 🗄️ Database Schema Management
+
+### Automatic Schema Management
+
+The application uses Hibernate's DDL auto feature to manage the database schema automatically:
+
+```properties
+spring.jpa.hibernate.ddl-auto=update
+```
+
+**Behavior:**
+- `update` (current setting): Creates new tables on startup, updates existing tables if entity definitions change
+- `create`: Drops all tables and recreates them on each startup
+- `create-drop`: Creates tables on startup, drops them on shutdown
+- `validate`: Validates existing schema against entities, fails if mismatch
+- `none`: No automatic schema management
+
+### Managing PostgreSQL Schema Manually
+
+**View all tables:**
+```bash
+psql -U postgres -d sb-ecomm -c "\dt"
+```
+
+**View table structure:**
+```bash
+psql -U postgres -d sb-ecomm -c "\d table_name"
+```
+
+**Drop all tables (for fresh start):**
+```bash
+psql -U postgres -d sb-ecomm -c "
+DROP TABLE IF EXISTS address CASCADE;
+DROP TABLE IF EXISTS cart CASCADE;
+DROP TABLE IF EXISTS cart_item CASCADE;
+DROP TABLE IF EXISTS product CASCADE;
+DROP TABLE IF EXISTS category CASCADE;
+DROP TABLE IF EXISTS user_role CASCADE;
+DROP TABLE IF EXISTS role CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+"
+```
+
+**Reset database (delete and recreate):**
+```bash
+psql -U postgres -c "DROP DATABASE \"sb-ecomm\" CASCADE;"
+psql -U postgres -c "CREATE DATABASE \"sb-ecomm\";"
+```
+
+Then restart the application to rebuild the schema.
+
+### Backing Up PostgreSQL Database
+
+**Create backup:**
+```bash
+pg_dump -U postgres sb-ecomm > sb-ecomm-backup.sql
+```
+
+**Restore from backup:**
+```bash
+psql -U postgres sb-ecomm < sb-ecomm-backup.sql
+```
+
+### Switching Database Dialect in Production
+
+If switching from PostgreSQL to another database for production:
+
+1. **Update Maven dependency** in `pom.xml`
+2. **Update application.properties** with new database URL and credentials
+3. **Update Hibernate dialect** to match new database:
+   - PostgreSQL: `org.hibernate.dialect.PostgreSQLDialect`
+   - MySQL: `org.hibernate.dialect.MySQLDialect`
+   - H2: `org.hibernate.dialect.H2Dialect`
+4. **Backup existing data** before migration
+5. **Test thoroughly** in development first
+6. **Run with `ddl-auto=validate`** initially to ensure schema compatibility
 
 ## 📡 API Endpoints
 
