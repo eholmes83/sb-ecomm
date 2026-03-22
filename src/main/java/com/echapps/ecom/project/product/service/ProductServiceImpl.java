@@ -90,6 +90,10 @@ public class ProductServiceImpl implements ProductService {
             throw new APIException("No products found!");
         }
 
+        return createProductResponseForPagination(productPage, productRequest);
+    }
+
+    private ProductResponse createProductResponseForPagination(Page<Product> productPage, List<ProductRequest> productRequest) {
         ProductResponse productResponse = new ProductResponse();
         productResponse.setContent(productRequest);
         productResponse.setPageNumber(productPage.getNumber());
@@ -132,14 +136,7 @@ public class ProductServiceImpl implements ProductService {
                 .map(product -> objectMapper.convertValue(product, ProductRequest.class))
                 .toList();
 
-        ProductResponse productResponse = new ProductResponse();
-        productResponse.setContent(productRequest);
-        productResponse.setPageNumber(productPage.getNumber());
-        productResponse.setPageSize(productPage.getSize());
-        productResponse.setTotalElements(productPage.getTotalElements());
-        productResponse.setTotalPages(productPage.getTotalPages());
-        productResponse.setLastPage(productPage.isLast());
-        return productResponse;
+        return createProductResponseForPagination(productPage, productRequest);
 
     }
 
@@ -158,14 +155,7 @@ public class ProductServiceImpl implements ProductService {
             throw new APIException("No products found with keyword: " + keyword);
         }
 
-        ProductResponse productResponse = new ProductResponse();
-        productResponse.setContent(productRequest);
-        productResponse.setPageNumber(productPage.getNumber());
-        productResponse.setPageSize(productPage.getSize());
-        productResponse.setTotalElements(productPage.getTotalElements());
-        productResponse.setTotalPages(productPage.getTotalPages());
-        productResponse.setLastPage(productPage.isLast());
-        return productResponse;
+        return createProductResponseForPagination(productPage, productRequest);
     }
 
     @Override
