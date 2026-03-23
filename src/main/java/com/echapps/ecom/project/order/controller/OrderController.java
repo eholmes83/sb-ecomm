@@ -8,6 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/order")
 public class OrderController {
@@ -22,7 +24,6 @@ public class OrderController {
 
     @PostMapping("/users/payments/{paymentMethod}")
     public ResponseEntity<OrderDTO> createOrder(@PathVariable String paymentMethod, @RequestBody OrderRequestDTO orderRequestDTO) {
-
         String emailId = authUtil.getLoggedInUserEmail();
         OrderDTO orderDTO = orderService.placeOrder(
                 emailId,
@@ -35,5 +36,18 @@ public class OrderController {
         );
 
         return new ResponseEntity<>(orderDTO, HttpStatus.CREATED);
+    }
+
+    @GetMapping("/users/orders")
+    public ResponseEntity<List<OrderDTO>> getUserOrders() {
+        String emailId = authUtil.getLoggedInUserEmail();
+        List<OrderDTO> orderDTOS = orderService.getOrdersByUser(emailId);
+        return new ResponseEntity<>(orderDTOS, HttpStatus.OK);
+    }
+
+    @GetMapping("/allOrders")
+    public ResponseEntity<List<OrderDTO>> getAllOrders() {
+        List<OrderDTO> orderDTOS = orderService.getAllOrders();
+        return new ResponseEntity<>(orderDTOS, HttpStatus.OK);
     }
 }

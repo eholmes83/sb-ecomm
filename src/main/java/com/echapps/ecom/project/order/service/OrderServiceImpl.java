@@ -124,4 +124,39 @@ public class OrderServiceImpl implements OrderService {
         orderDTO.setAddressId(addressId);
         return orderDTO;
     }
+
+    @Override
+    public List<OrderDTO> getOrdersByUser(String emailId) {
+        List<Order> orders = orderRepository.getOrdersByEmail(emailId);
+        if (orders.isEmpty()) {
+            throw new APIException("No orders found for user with email " + emailId);
+        }
+
+        return mapToOrderDTO(orders);
+    }
+
+    @Override
+    public List<OrderDTO> getAllOrders() {
+        List<Order> orders = orderRepository.findAll();
+        if (orders.isEmpty()) {
+            throw new APIException("No orders found!");
+        }
+
+        return mapToOrderDTO(orders);
+    }
+
+    private List<OrderDTO> mapToOrderDTO(List<Order> orders) {
+        return orders.stream().map(order -> {
+            OrderDTO orderDTO = mapper.convertValue(order, OrderDTO.class);
+
+            List<OrderItemDTO> orderItemDTOs = order.getOrderItems().stream()
+                    .map(orderItem -> mapper.convertValue(orderItem, OrderItemDTO.class))
+                    .toList();
+            orderDTO.setOrderItems(orderItemDTOs);
+            orderDTO.setAddressId(order.getAddress().getAddressId());
+            return orderDTO;
+        }).toList();
+    }
+
+
 }
