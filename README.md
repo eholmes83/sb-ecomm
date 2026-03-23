@@ -37,7 +37,45 @@ This is a **living document** that evolves as I progress through a comprehensive
 
 ### 🔄 Recent Changes
 
-**Latest Updates (March 18, 2026):**
+**Latest Updates (March 22-23, 2026):**
+- 📦 **Order Management Endpoints - Get All Orders & User Orders**
+  - Added two new query endpoints to `OrderController`:
+    - `GET /api/v1/order/allOrders` - Retrieve all orders in the system (admin view)
+    - `GET /api/v1/order/users/orders` - Retrieve all orders for the currently authenticated user
+  - Added corresponding service methods in `OrderService` and `OrderServiceImpl`:
+    - `getAllOrders()` - Fetches all orders from database and converts to DTOs
+    - `getOrdersByUser(String emailId)` - Fetches user-specific orders by email
+  - Enhanced `OrderRepository` with custom query methods:
+    - `findByUserEmail(String email)` - Enables user-scoped order retrieval
+  - Benefits: Complete order query capability, user-scoped order history retrieval, system-wide order management for admins
+  
+- 🔐 **Dual JWT Authentication Support - Cookie & Header**
+  - Enhanced `AuthTokenFilter` to support JWT from both sources:
+    - Primary: Cookie-based JWT (checks for `sb-ecomm-jwt` cookie first)
+    - Fallback: Authorization header Bearer token (if no cookie found)
+  - Updated `parseJwt()` method in AuthTokenFilter:
+    - First attempts to extract JWT from cookie via `jwtUtils.getJwtFromCookie(request)`
+    - Falls back to header-based extraction via `jwtUtils.getJwtFromRequestHeader(request)` if no cookie
+    - Debug logging at each step for troubleshooting authentication flow
+  - Benefits: Flexible authentication for different client types (web browsers use cookies, mobile/API clients can use headers), backward compatibility with existing Bearer token clients
+  
+- 📚 **OpenAPI/Swagger Documentation Configuration**
+  - Added `SwaggerConfig.java` for OpenAPI 3.0 setup
+  - Created `customOpenAPI()` bean with:
+    - HTTP Bearer token security scheme with JWT bearer format
+    - Security requirement applied globally to all endpoints
+    - Enables API documentation and testing via Swagger UI at `/swagger-ui.html`
+  - Updated pom.xml with `spring-boot-starter-openapi` dependency
+  - Commented out H2-console dependency (no longer needed for production)
+  - Benefits: Interactive API documentation, ability to test endpoints directly from Swagger UI with authentication, better developer experience
+
+- 🛠️ **Code Refactoring - DRY Principle Improvement**
+  - Refactored `ProductServiceImpl` to reduce code duplication
+  - Eliminated duplicate product conversion logic by extracting common patterns
+  - Improved maintainability and reduced bug surface area
+  - Benefits: Cleaner code, easier to maintain, follows DRY (Don't Repeat Yourself) principle
+
+**Previous Updates (March 18, 2026):**
 - 🔍 **Infinite Recursion Scan - Additional Risk Identified**
   - Project-wide scan confirmed the previous Product/Category recursion fix is still valid
   - Found an additional potential recursion path in order placement mapping:
@@ -49,7 +87,7 @@ This is a **living document** that evolves as I progress through a comprehensive
     - Ignore back-link fields (`@JsonIgnore`) where API responses do not need them
   - Added explicit verification step for `POST /api/v1/order/users/payments/{paymentMethod}` to confirm no `StackOverflowError`
 
-- 👥 **Address Management Feature - Complete CRUD Operations**
+**Previous Address Management Updates (March 18, 2026):**
   - Implemented comprehensive address management for logged-in users
   - Added `AddressController` with six REST endpoints under `/api/v1/addresses`:
     - `POST /api/v1/addresses` - Create a new address for current user
@@ -617,12 +655,13 @@ This is a **living document** that evolves as I progress through a comprehensive
 - `jjwt` - JSON Web Token (JWT) library for token generation and validation
 - `postgresql` - PostgreSQL JDBC driver for database connectivity (primary database)
 - `h2` - In-memory relational database (development/testing alternative)
-- `spring-boot-h2console` - H2 database browser console (when using H2)
+- `spring-boot-h2console` - H2 database browser console (commented out - not used in production)
 - `mysql-connector-j` - MySQL JDBC driver (development/testing alternative)
 - `spring-boot-devtools` - Development tools for automatic restart and live reload
 - `lombok` (v1.18.42) - Annotation-based code generation (getters, setters, constructors, etc.)
 - `spring-boot-starter-webmvc-test` - Testing support for Spring MVC applications
 - `jackson-databind` - JSON serialization/deserialization with advanced features (@JsonBackReference, @JsonManagedReference, @JsonIgnore)
+- `springdoc-openapi-starter-webmvc-ui` - OpenAPI 3.0 documentation and Swagger UI integration for interactive API testing
 
 ## 📦 Prerequisites
 
@@ -742,6 +781,12 @@ java -jar target/sb-ecomm-0.0.1-SNAPSHOT.jar
 
 The application will start on `http://localhost:8080`
 
+**Access Swagger UI Documentation:**
+```
+http://localhost:8080/swagger-ui.html
+```
+The interactive Swagger UI allows you to test all API endpoints directly with authentication support. JWT Bearer tokens from cookie or header are automatically recognized.
+
 **Verify Application is Running:**
 ```bash
 # Should return a JSON response
@@ -854,6 +899,22 @@ com.echapps.ecom.project/
 │           ├── CartDTO.java
 │           └── CartItemDTO.java
 │
+├── order/                        # Order Management Feature Slice (⚙️ Partially Implemented)
+│   ├── controller/               # ⚙️ Partial implementation
+│   │   └── OrderController.java (3 endpoints: create, get user orders, get all orders)
+│   ├── service/                  # ⚙️ Partial implementation
+│   │   ├── OrderService.java
+│   │   └── OrderServiceImpl.java (order placement and retrieval logic)
+│   ├── repository/               # ✅ Data access layer (JPA/Database)
+│   │   └── OrderRepository.java (findByUserEmail)
+│   ├── model/                    # ✅ Domain entities
+│   │   └── Order.java
+│   ├── dto/                      # ✅ Data transfer objects
+│   │   └── request/
+│   │       ├── OrderDTO.java
+│   │       └── OrderRequestDTO.java
+│   └── item/                     # 🚧 Order item management (planned)
+│
 ├── user/                         # User Management Feature Slice
 │   ├── address/                  # ✅ Address Management Feature (Complete CRUD)
 │   │   ├── controller/
@@ -882,7 +943,8 @@ com.echapps.ecom.project/
 │
 ├── security/                     # Security & Authentication Feature Slice
 │   ├── config/                   # ✅ Security configuration
-│   │   └── WebSecurityConfig.java
+│   │   ├── WebSecurityConfig.java (Spring Security setup)
+│   │   └── SwaggerConfig.java (OpenAPI 3.0 Swagger UI configuration)
 │   ├── controller/               # ✅ Authentication controller
 │   │   └── AuthController.java
 │   ├── jwt/                      # ✅ JWT token handling
@@ -1397,6 +1459,99 @@ Deletes an address by ID and removes it from the user's address list.
 }
 ```
 
+### Order Management
+
+**Create Order**
+```
+POST /api/v1/order/users/payments/{paymentMethod}
+Content-Type: application/json
+
+{
+  "addressId": 1,
+  "pgName": "Stripe",
+  "pgPaymentId": "pay_123456",
+  "pgStatus": "SUCCESS",
+  "pgResponseMessage": "Payment processed successfully"
+}
+```
+Creates a new order for the authenticated user with the specified payment method and details.
+
+**Response:** `201 CREATED`
+```json
+{
+  "orderId": 1,
+  "orderDate": "2026-03-23T10:30:00.000Z",
+  "totalAmount": 899.99,
+  "orderStatus": "PENDING",
+  "paymentMethod": "stripe",
+  "addressId": 1
+}
+```
+
+**Response (Invalid Address):** `404 NOT FOUND`
+```json
+{
+  "message": "Address not found",
+  "isSuccess": false
+}
+```
+
+**Get All Orders for Current User**
+```
+GET /api/v1/order/users/orders
+```
+Retrieves all orders belonging to the currently authenticated user.
+
+**Response:** `200 OK`
+```json
+[
+  {
+    "orderId": 1,
+    "orderDate": "2026-03-23T10:30:00.000Z",
+    "totalAmount": 899.99,
+    "orderStatus": "PENDING",
+    "paymentMethod": "stripe",
+    "addressId": 1
+  },
+  {
+    "orderId": 2,
+    "orderDate": "2026-03-22T15:45:00.000Z",
+    "totalAmount": 1299.99,
+    "orderStatus": "DELIVERED",
+    "paymentMethod": "stripe",
+    "addressId": 1
+  }
+]
+```
+
+**Get All Orders in System**
+```
+GET /api/v1/order/allOrders
+```
+Retrieves all orders from the system (admin view for system-wide order management).
+
+**Response:** `200 OK`
+```json
+[
+  {
+    "orderId": 1,
+    "orderDate": "2026-03-23T10:30:00.000Z",
+    "totalAmount": 899.99,
+    "orderStatus": "PENDING",
+    "paymentMethod": "stripe",
+    "addressId": 1
+  },
+  {
+    "orderId": 2,
+    "orderDate": "2026-03-22T15:45:00.000Z",
+    "totalAmount": 1299.99,
+    "orderStatus": "DELIVERED",
+    "paymentMethod": "stripe",
+    "addressId": 1
+  }
+]
+```
+
 ### Category Management
 
 **Get All Categories**
@@ -1768,6 +1923,20 @@ curl -s -X PUT http://localhost:8080/api/v1/addresses/1 \
 
 # Delete address
 curl -s -X DELETE http://localhost:8080/api/v1/addresses/1 \
+  -b cookies.txt
+
+# Create an order for current user with a specific address
+curl -s -X POST http://localhost:8080/api/v1/order/users/payments/stripe \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{"addressId": 1, "pgName": "Stripe", "pgPaymentId": "pay_123456", "pgStatus": "SUCCESS", "pgResponseMessage": "Payment processed successfully"}'
+
+# Get all orders for current user
+curl -s http://localhost:8080/api/v1/order/users/orders \
+  -b cookies.txt
+
+# Get all orders in system (admin view)
+curl -s http://localhost:8080/api/v1/order/allOrders \
   -b cookies.txt
 
 # Sign out (clears cookie)
