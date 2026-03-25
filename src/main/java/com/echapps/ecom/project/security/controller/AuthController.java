@@ -11,6 +11,11 @@ import com.echapps.ecom.project.user.model.Role;
 import com.echapps.ecom.project.user.model.User;
 import com.echapps.ecom.project.user.repository.RoleRepository;
 import com.echapps.ecom.project.user.repository.UserRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -49,6 +54,13 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
+    @Tag(name = "Authentication APIs", description = "APIs for user authentication and session management")
+    @Operation(summary = "Register a new user", description = "Create a new user account by providing the username, email, password, and optional roles in the request body.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "User registered successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid user data or username/email already taken", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content)
+    })
     public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signupRequest) {
         if (userRepository.existsByUserName(signupRequest.getUsername())) {
             return ResponseEntity.badRequest().body(new MessageResponse("Error: Username is already taken!"));
@@ -96,6 +108,13 @@ public class AuthController {
     }
 
     @GetMapping("/current-user")
+    @Tag(name = "Authentication APIs", description = "APIs for user authentication and session management")
+    @Operation(summary = "Get current logged-in user's username", description = "Retrieve the username of the currently authenticated user.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved current user's username"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - user is not authenticated", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content)
+    })
     public String getCurrentUserName(Authentication authentication) {
         if (authentication != null) {
             return authentication.getName();
@@ -105,6 +124,13 @@ public class AuthController {
     }
 
     @GetMapping("/user")
+    @Tag(name = "Authentication APIs", description = "APIs for user authentication and session management")
+    @Operation(summary = "Get current logged-in user's details", description = "Retrieve the details of the currently authenticated user, including their ID, username, and roles.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved current user's details"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - user is not authenticated", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content)
+    })
     public ResponseEntity<UserLoginResponse> getUserDetails(Authentication authentication) {
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
 
@@ -119,6 +145,13 @@ public class AuthController {
     }
 
     @PostMapping("/signin")
+    @Tag(name = "Authentication APIs", description = "APIs for user authentication and session management")
+    @Operation(summary = "Authenticate user and generate JWT token", description = "Authenticate a user by providing their username and password in the request body. If authentication is successful, a JWT token will be generated and returned in the response.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "User authenticated successfully and JWT token generated"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - invalid username or password", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content)
+    })
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
         Authentication authentication = null;
 
@@ -153,6 +186,13 @@ public class AuthController {
     }
 
     @PostMapping("/signout")
+    @Tag(name = "Authentication APIs", description = "APIs for user authentication and session management")
+    @Operation(summary = "Logout user and clear JWT token", description = "Logout the currently authenticated user by clearing the JWT token from the response cookie.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "User logged out successfully and JWT token cleared"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - user is not authenticated", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content)
+    })
     public ResponseEntity<?> logoutUser() {
         ResponseCookie cookie = jwtUtils.getCleanJwtCookie();
         return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString())
