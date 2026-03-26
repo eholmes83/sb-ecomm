@@ -9,6 +9,8 @@ A full-stack e-commerce application built with Spring Boot, designed to provide 
 - [Prerequisites](#prerequisites)
 - [Architecture Overview](#architecture-overview)
 - [Project Structure](#project-structure)
+- [Recent Changes](#-recent-changes)
+- [Historical Changes](#-historical-changes)
 - [Getting Started](#getting-started)
 - [Building the Application](#building-the-application)
 - [Running the Application](#running-the-application)
@@ -37,7 +39,13 @@ This is a **living document** that evolves as I progress through a comprehensive
 
 ### 🔄 Recent Changes
 
-**Latest Updates (March 22-23, 2026):**
+**Latest Updates (March 22-26, 2026):**
+- 📚 **OpenAPI/Swagger Documentation Enhancements**
+  - Latest commits (March 25-26) added comprehensive OpenAPI specifications and documentation to all API controllers
+  - Enhanced Swagger UI integration for interactive API testing and documentation
+  - Improved API discoverability and developer experience with detailed endpoint documentation
+  - Benefits: Better API documentation, easier endpoint testing, clearer API contracts for consumers
+
 - 📦 **Order Management Endpoints - Get All Orders & User Orders**
   - Added two new query endpoints to `OrderController`:
     - `GET /api/v1/order/allOrders` - Retrieve all orders in the system (admin view)
@@ -74,6 +82,8 @@ This is a **living document** that evolves as I progress through a comprehensive
   - Eliminated duplicate product conversion logic by extracting common patterns
   - Improved maintainability and reduced bug surface area
   - Benefits: Cleaner code, easier to maintain, follows DRY (Don't Repeat Yourself) principle
+
+### 📜 Historical Changes
 
 **Previous Updates (March 18, 2026):**
 - 🔍 **Infinite Recursion Scan - Additional Risk Identified**
