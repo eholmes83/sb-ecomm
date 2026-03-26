@@ -4,7 +4,7 @@ import com.echapps.ecom.project.security.jwt.JwtUtils;
 import com.echapps.ecom.project.security.request.LoginRequest;
 import com.echapps.ecom.project.security.request.SignupRequest;
 import com.echapps.ecom.project.security.response.MessageResponse;
-import com.echapps.ecom.project.security.response.UserLoginResponse;
+import com.echapps.ecom.project.security.response.LoginResponse;
 import com.echapps.ecom.project.security.services.UserDetailsImpl;
 import com.echapps.ecom.project.user.model.AppRole;
 import com.echapps.ecom.project.user.model.Role;
@@ -131,17 +131,17 @@ public class AuthController {
             @ApiResponse(responseCode = "401", description = "Unauthorized - user is not authenticated", content = @Content),
             @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content)
     })
-    public ResponseEntity<UserLoginResponse> getUserDetails(Authentication authentication) {
+    public ResponseEntity<LoginResponse> getUserDetails(Authentication authentication) {
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
 
         List<String> roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .toList();
 
-        UserLoginResponse userLoginResponse = new UserLoginResponse(userDetails.getId(), userDetails.getUsername(), roles);
+        LoginResponse loginResponse = new LoginResponse(userDetails.getId(), userDetails.getUsername(), roles);
         return ResponseEntity
                 .ok()
-                .body(userLoginResponse);
+                .body(loginResponse);
     }
 
     @PostMapping("/signin")
@@ -178,11 +178,11 @@ public class AuthController {
                 .map(GrantedAuthority::getAuthority)
                 .toList();
 
-        UserLoginResponse userLoginResponse = new UserLoginResponse(userDetails.getId(), jwtCookie.toString(), userDetails.getUsername(), roles);
+        LoginResponse loginResponse = new LoginResponse(userDetails.getId(), jwtCookie.toString(), userDetails.getUsername(), roles);
         return ResponseEntity
                 .ok()
                 .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
-                .body(userLoginResponse);
+                .body(loginResponse);
     }
 
     @PostMapping("/signout")
