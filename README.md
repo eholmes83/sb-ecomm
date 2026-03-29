@@ -7,11 +7,9 @@ A full-stack e-commerce application built with Spring Boot, designed to provide 
 - [Overview](#overview)
 - [Technology Stack](#technology-stack)
 - [Prerequisites](#prerequisites)
-- [Architecture Overview](#architecture-overview)
-- [Project Structure](#project-structure)
-- [Recent Changes](#recent-changes)
-- [Historical Changes](#historical-changes)
 - [Getting Started](#getting-started)
+- [Project Structure](#project-structure)
+- [Testing](#testing)
 - [Building the Application](#building-the-application)
 - [Running the Application](#running-the-application)
 - [Database Schema Management](#database-schema-management)
@@ -26,6 +24,19 @@ A full-stack e-commerce application built with Spring Boot, designed to provide 
 This is a **living document** that evolves as I progress through a comprehensive Udemy course on AWS and full-stack development. I'm working through this course to expand my skillset, maintain my technical skills, and continue learning while actively seeking new opportunities after a recent layoff. This project will grow and improve as new features and concepts from the course are implemented.
 
 ### 🔄 Recent Changes
+
+**Latest Updates (March 28, 2026):**
+- ✅ **Product Test Coverage Expanded**
+  - Added `ProductServiceImplTest` with grouped, nested unit tests for service behavior (add, update, search, delete, image update).
+  - Added `FileServiceImplTest` covering upload filename generation, file creation/content checks, directory handling, and error paths.
+  - Added `ProductRepositoryTest` covering custom repository queries (`findByCategoryOrderByPriceAsc`, `findByProductNameLikeIgnoreCase`) and core JPA operations.
+  - Result: Product layer now has controller + repository + service + file-service test coverage under `src/test/java/com/echapps/ecom/project/product/`.
+
+- ✅ **User Service Layer Added**
+  - Added `user/service/UserService.java` and `user/service/UserServiceImpl.java` to centralize auth/user business logic methods.
+
+- ✅ **Environment Variable Bootstrapping Updated**
+  - `SbEcommApplication` now loads optional `.env` values via `dotenv-java` and maps them into system properties before startup.
 
 **Latest Updates (March 22-26, 2026):**
 - 📚 **OpenAPI/Swagger Documentation Enhancements**
@@ -650,11 +661,11 @@ This is a **living document** that evolves as I progress through a comprehensive
 - `spring-boot-starter-data-jpa` - Spring Data JPA for database persistence
 - `spring-boot-starter-validation` - Jakarta Bean Validation for input validation
 - `spring-boot-starter-security` - Spring Security framework for authentication and authorization
-- `jjwt` - JSON Web Token (JWT) library for token generation and validation
+- `jjwt-api` / `jjwt-impl` / `jjwt-jackson` - JWT token generation, parsing, and JSON binding
 - `postgresql` - PostgreSQL JDBC driver for database connectivity (primary database)
 - `h2` - In-memory relational database (development/testing alternative)
-- `spring-boot-h2console` - H2 database browser console (commented out - not used in production)
-- `mysql-connector-j` - MySQL JDBC driver (development/testing alternative)
+- `dotenv-java` - Loads optional `.env` values at startup
+- `mysql-connector-j` - MySQL JDBC driver (optional, currently commented in `pom.xml`)
 - `spring-boot-devtools` - Development tools for automatic restart and live reload
 - `lombok` (v1.18.42) - Annotation-based code generation (getters, setters, constructors, etc.)
 - `spring-boot-starter-webmvc-test` - Testing support for Spring MVC applications
@@ -799,191 +810,84 @@ If you get an error about missing authentication, sign in first (see API Endpoin
 sb-ecomm/
 ├── src/
 │   ├── main/
-│   │   ├── java/
-│   │   │   └── com/
-│   │   │       └── echapps/
-│   │   │           └── ecom/
-│   │   │               └── project/
-│   │   │                   ├── SbEcommApplication.java              # Main application entry point
-│   │   │                   ├── controller/
-│   │   │                   │   └── CategoryController.java          # REST endpoints for categories
-│   │   │                   ├── model/
-│   │   │                   │   └── Category.java                    # Category entity
-│   │   │                   └── service/
-│   │   │                       ├── CategoryService.java             # Service interface
-│   │   │                       └── CategoryServiceImpl.java          # Service implementation
+│   │   ├── java/com/echapps/ecom/project/
+│   │   │   ├── SbEcommApplication.java
+│   │   │   ├── cart/
+│   │   │   ├── category/
+│   │   │   ├── config/
+│   │   │   ├── exceptions/
+│   │   │   ├── order/
+│   │   │   ├── payment/
+│   │   │   ├── product/
+│   │   │   │   └── service/file/
+│   │   │   ├── security/
+│   │   │   ├── user/
+│   │   │   │   ├── address/
+│   │   │   │   └── service/
+│   │   │   └── utils/
 │   │   └── resources/
-│   │       ├── application.properties                               # Application configuration
-│   │       ├── static/                                              # Static resources (CSS, JS, images)
-│   │       └── templates/                                           # Server-side templates (Thymeleaf, etc.)
-│   └── test/
-│       └── java/
-│           └── com/
-│               └── echapps/
-│                   └── ecom/
-│                       └── project/
-│                           └── SbEcommApplicationTests.java          # Test cases
-├── pom.xml                                                          # Maven configuration
-├── mvnw                                                             # Maven Wrapper (Unix)
-├── mvnw.cmd                                                         # Maven Wrapper (Windows)
-└── README.md                                                        # This file
+│   │       ├── application.properties
+│   │       ├── static/
+│   │       └── templates/
+│   └── test/java/com/echapps/ecom/project/
+│       ├── SbEcommApplicationTests.java
+│       ├── category/
+│       │   ├── controller/
+│       │   ├── repository/
+│       │   └── service/
+│       └── product/
+│           ├── controller/
+│           ├── repository/
+│           └── service/
+│               └── file/
+├── markdowns/
+├── Postman Collections & Test Data/
+├── pom.xml
+├── mvnw
+├── mvnw.cmd
+└── README.md
 ```
 
 ### 🏛️ Architecture Overview
 
-The application follows a **Vertical Slice Architecture** pattern, organizing code by feature/domain boundaries rather than technical layers. Each feature slice contains all layers needed to implement that feature independently.
+The codebase follows a **feature-oriented / vertical-slice organization** where each domain (`category`, `product`, `cart`, `order`, `user`, etc.) owns its controller, service, repository, DTO, and model concerns.
 
-> **Note**: The project has been refactored from a traditional horizontal layered architecture to vertical slice architecture to better support scalability, maintainability, and team collaboration. As new features are added, they will follow the same vertical slice pattern established in the Category feature slice.
+Current high-level package layout under `com.echapps.ecom.project`:
 
-#### Package Organization - Vertical Slice Structure
+- `category/` - category CRUD and pagination flow
+- `product/` - product CRUD, search, image upload integration, and pricing logic
+- `cart/` - cart and cart-item operations
+- `order/` and `payment/` - order placement and payment flow
+- `user/` - user/role models, repositories, address module, and user service layer
+- `security/` - JWT auth, security filters/config, auth endpoints, and user-details integration
+- `exceptions/`, `config/`, `utils/` - shared cross-cutting concerns
 
-```
-com.echapps.ecom.project/
-├── category/                     # Category Management Feature Slice
-│   ├── controller/               # ✅ REST endpoints (HTTP layer)
-│   │   └── CategoryController.java (uses @Valid for validation)
-│   ├── service/                  # ✅ Business logic layer
-│   │   ├── CategoryService.java
-│   │   └── CategoryServiceImpl.java (uses JPA repository)
-│   ├── repository/               # ✅ Data access layer (JPA/Database)
-│   │   └── CategoryRepository.java (extends JpaRepository)
-│   ├── model/                    # ✅ Domain entities (JPA Entity with validation)
-│   │   └── Category.java (uses Lombok & Jakarta Bean Validation)
-│   ├── dto/                      # ✅ Data transfer objects
-│   │   ├── request/
-│   │   │   └── CategoryRequest.java
-│   │   └── response/
-│   │       ├── CategoryResponse.java
-│   │       └── APIResponse.java (standardized error responses)
-│   ├── exception/                # 🚧 Feature-specific exceptions (planned)
-│   ├── validator/                # 🚧 Custom validation logic (planned)
-│   ├── mapper/                   # 🚧 DTO/Entity mappers (planned)
-│   └── config/                   # 🚧 Feature configuration (planned)
-│
-├── product/                      # Product Management Feature Slice
-│   ├── controller/               # ✅ REST endpoints (HTTP layer)
-│   │   └── ProductController.java (handles all product requests)
-│   ├── service/                  # ✅ Business logic layer
-│   │   ├── ProductService.java
-│   │   └── ProductServiceImpl.java (advanced search & pricing logic)
-│   ├── repository/               # ✅ Data access layer (JPA/Database)
-│   │   └── ProductRepository.java (custom JPQL queries)
-│   ├── model/                    # ✅ Domain entities (JPA Entity with relationships)
-│   │   └── Product.java (uses Lombok & Category relationship)
-│   ├── dto/                      # ✅ Data transfer objects
-│   │   ├── request/
-│   │   │   └── ProductRequest.java
-│   │   └── response/
-│   │       └── ProductResponse.java
-│   ├── exception/                # 🚧 Feature-specific exceptions (planned)
-│   ├── validator/                # 🚧 Custom validation logic (planned)
-│   ├── mapper/                   # 🚧 DTO/Entity mappers (planned)
-│   └── config/                   # 🚧 Feature configuration (planned)
-│
-├── cart/                         # Cart Feature Slice (⚙️ Partially Implemented)
-│   ├── controller/               # ⚙️ Partial implementation
-│   │   └── CartController.java (5 endpoints: add, get all, get user cart, update qty, delete item)
-│   ├── service/                  # ⚙️ Partial implementation
-│   │   ├── CartService.java
-│   │   └── CartServiceImpl.java (add to cart, retrieve, update quantity, delete items)
-│   ├── repository/               # ✅ Data access layer (JPA/Database)
-│   │   ├── CartRepository.java (findCartByEmail, findCartByEmailAndCartId)
-│   │   └── CartItemRepository.java (custom delete methods)
-│   ├── model/                    # ✅ Domain entities
-│   │   ├── Cart.java
-│   │   └── CartItem.java
-│   └── dto/                      # ✅ Data transfer objects
-│       └── request/
-│           ├── CartDTO.java
-│           └── CartItemDTO.java
-│
-├── order/                        # Order Management Feature Slice (⚙️ Partially Implemented)
-│   ├── controller/               # ⚙️ Partial implementation
-│   │   └── OrderController.java (3 endpoints: create, get user orders, get all orders)
-│   ├── service/                  # ⚙️ Partial implementation
-│   │   ├── OrderService.java
-│   │   └── OrderServiceImpl.java (order placement and retrieval logic)
-│   ├── repository/               # ✅ Data access layer (JPA/Database)
-│   │   └── OrderRepository.java (findByUserEmail)
-│   ├── model/                    # ✅ Domain entities
-│   │   └── Order.java
-│   ├── dto/                      # ✅ Data transfer objects
-│   │   └── request/
-│   │       ├── OrderDTO.java
-│   │       └── OrderRequestDTO.java
-│   └── item/                     # 🚧 Order item management (planned)
-│
-├── user/                         # User Management Feature Slice
-│   ├── address/                  # ✅ Address Management Feature (Complete CRUD)
-│   │   ├── controller/
-│   │   │   └── AddressController.java (6 REST endpoints)
-│   │   ├── service/
-│   │   │   ├── AddressService.java (interface)
-│   │   │   └── AddressServiceImpl.java (implementation)
-│   │   └── dto/
-│   │       └── request/
-│   │           └── AddressDTO.java
-│   ├── controller/               # 🚧 REST endpoints for profile/account management (planned)
-│   ├── service/                  # 🚧 Business logic layer (planned)
-│   ├── repository/               # ✅ Data access layer (JPA/Database)
-│   │   ├── UserRepository.java (findByUserName, existsByUserName, existsByEmail)
-│   │   ├── AddressRepository.java (JpaRepository)
-│   │   └── RoleRepository.java (findByRoleName)
-│   ├── model/                    # ✅ Domain entities (JPA Entities)
-│   │   ├── User.java (with OneToMany relationship to Address)
-│   │   ├── Role.java
-│   │   ├── AppRole.java
-│   │   └── Address.java (with ManyToOne relationship to User)
-│   ├── dto/                      # 🚧 Data transfer objects (planned)
-│   ├── exception/                # 🚧 Feature-specific exceptions (planned)
-│   ├── validator/                # 🚧 Custom validation logic (planned)
-│   └── mapper/                   # 🚧 DTO/Entity mappers (planned)
-│
-├── security/                     # Security & Authentication Feature Slice
-│   ├── config/                   # ✅ Security configuration
-│   │   ├── WebSecurityConfig.java (Spring Security setup)
-│   │   └── SwaggerConfig.java (OpenAPI 3.0 Swagger UI configuration)
-│   ├── controller/               # ✅ Authentication controller
-│   │   └── AuthController.java
-│   ├── jwt/                      # ✅ JWT token handling
-│   │   ├── JwtUtils.java
-│   │   ├── AuthTokenFilter.java
-│   │   └── AuthEntryPointJwt.java
-│   ├── request/                  # ✅ Authentication request DTOs
-│   │   ├── LoginRequest.java
-│   │   └── SignupRequest.java
-│   ├── response/                 # ✅ Authentication response DTOs
-│   │   ├── UserLoginResponse.java
-│   │   └── MessageResponse.java
-│   └── services/                 # ✅ Spring Security integration
-│       ├── UserDetailsServiceImpl.java
-│       └── UserDetailsImpl.java
-│
-└── shared/                       # Shared/Cross-cutting concerns
-    ├── exception/                # ✅ Global exception handling
-    │   ├── GlobalExceptionHandler.java
-    │   ├── APIException.java
-    │   └── ResourceNotFoundException.java
-    ├── config/                   # ✅ Application-wide configuration
-    │   └── AppConstants.java
-    ├── util/                     # 🚧 Cross-cutting utilities (planned)
-    └── constants/                # 🚧 Global constants (planned)
+## 🧪 Testing
+
+The project currently uses a mix of repository integration tests and unit tests (JUnit 5 + Mockito).
+
+### Current Test Layout
+
+- `src/test/java/com/echapps/ecom/project/category/`
+  - `controller/CategoryControllerTest.java`
+  - `repository/CategoryRepositoryTest.java`
+  - `service/CategoryServiceImplTest.java`
+- `src/test/java/com/echapps/ecom/project/product/`
+  - `controller/ProductControllerTest.java`
+  - `repository/ProductRepositoryTest.java`
+  - `service/ProductServiceImplTest.java`
+  - `service/file/FileServiceImplTest.java`
+- `src/test/java/com/echapps/ecom/project/SbEcommApplicationTests.java`
+
+### Run Tests
+
+```bash
+./mvnw test
 ```
 
-> **Current Implementation Status:**  
-> ✅ = Implemented | 🚧 = Planned/In Development  
-> 
-> Both Category and Product features now have **full vertical slice implementations** with all CRUD operations, validation, DTOs, repositories, and service layers. The Product feature includes advanced search capabilities (keyword search, category filtering) and special pricing calculations. Shared exception handling is centralized in the GlobalExceptionHandler for both features.
-
-#### Benefits of Vertical Slice Architecture
-
-✅ **Feature Isolation** - Each feature is self-contained and independently deployable  
-✅ **Reduced Coupling** - Features don't depend on shared horizontal layers  
-✅ **Scalability** - Easy to add new features without modifying existing code  
-✅ **Testability** - Each slice can be tested in isolation  
-✅ **Maintainability** - All code for a feature is in one location  
-✅ **Team Collaboration** - Teams can work on different features in parallel  
-✅ **Domain-Driven Design** - Naturally aligns with business domains
+```bash
+./mvnw test -Dtest="ProductServiceImplTest,FileServiceImplTest,ProductRepositoryTest"
+```
 
 ## 🔨 Building the Application
 
